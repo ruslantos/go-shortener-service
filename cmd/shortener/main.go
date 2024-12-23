@@ -26,7 +26,7 @@ func (l LinksStorage) mainPage(res http.ResponseWriter, req *http.Request) {
 		short := l.addLink(string(body))
 
 		res.WriteHeader(http.StatusCreated)
-		res.Write([]byte(short))
+		res.Write([]byte("http://localhost:8080/" + short))
 	case http.MethodGet:
 		q := req.URL.Path
 		if len(q) == 0 || q == "/" {
