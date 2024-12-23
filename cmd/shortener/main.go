@@ -35,7 +35,8 @@ func (l LinksStorage) mainPage(res http.ResponseWriter, req *http.Request) {
 		}
 		v, ok := l.getLink(strings.Replace(q, "/", "", 1))
 		if !ok {
-			http.Error(res, "Invalid path", http.StatusBadRequest)
+			http.Error(res, "Unknown link", http.StatusBadRequest)
+			return
 		}
 
 		res.Header().Set("Location", v)
