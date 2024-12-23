@@ -47,7 +47,7 @@ func (l LinksStorage) mainPage(res http.ResponseWriter, req *http.Request) {
 
 func main() {
 	mux := http.NewServeMux()
-	l := LinksStorage{linksMap: make(map[string]string)}
+	l := LinksStorage{linksMap: make(map[string]string), mutex: &sync.Mutex{}}
 	mux.HandleFunc("/", l.mainPage)
 
 	err := http.ListenAndServe(`:8080`, mux)
