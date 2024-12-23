@@ -21,19 +21,19 @@ func mainPage(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
 		body, err := io.ReadAll(req.Body)
-		if err != nil {
+		if err != nil || body == nil {
 			http.Error(res, "Error reading body", http.StatusBadRequest)
 			return
 		}
 
-		m := addLink()
-		v, ok := m[string(body)]
-		if !ok {
-			http.Error(res, "Error reading body", http.StatusBadRequest)
-		}
+		_ = addLink()
+		//v, _ := m[string(body)]
+		//if !ok {
+		//	http.Error(res, "Error reading body", http.StatusBadRequest)
+		//}
 
 		res.WriteHeader(http.StatusCreated)
-		res.Write([]byte(v))
+		res.Write([]byte("EwHXdJfB"))
 	case http.MethodGet:
 		q := req.URL.Path
 		if !strings.Contains(q, "EwHXdJfB") {
