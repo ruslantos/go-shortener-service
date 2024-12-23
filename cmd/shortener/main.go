@@ -11,7 +11,7 @@ import (
 
 type LinksStorage struct {
 	linksMap map[string]string
-	mutex    sync.Mutex
+	mutex    *sync.Mutex
 }
 
 func (l LinksStorage) mainPage(res http.ResponseWriter, req *http.Request) {
