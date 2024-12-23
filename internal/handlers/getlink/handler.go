@@ -1,8 +1,8 @@
-package postLink
+package getlink
 
 import (
-	"io"
 	"net/http"
+	"strings"
 )
 
 type linksStorage interface {
@@ -19,14 +19,17 @@ func New(linksStorage linksStorage) *Handler {
 }
 
 func (h *Handler) Handle(res http.ResponseWriter, req *http.Request) {
-	body, err := io.ReadAll(req.Body)
-	if err != nil || body == nil || len(body) == 0 {
-		http.Error(res, "Error reading body", http.StatusBadRequest)
+	q := req.URL.Path
+	if len(q) == 0 || q == "/" {
+		http.Error(res, "Invalid path", http.StatusBadRequest)
+		return
+	}
+	v, ok := h.linksStorage.GetLink(strings.Replace(q, "/", "", 1))
+	if !ok {
+		http.Error(res, "Unknown link", http.StatusBadRequest)
 		return
 	}
 
-	short := h.linksStorage.AddLink(string(body))
-
-	res.WriteHeader(http.StatusCreated)
-	res.Write([]byte("http://localhost:8080/" + short))
+	res.Header().Set("Location", v)
+	res.WriteHeader(http.StatusTemporaryRedirect)
 }
