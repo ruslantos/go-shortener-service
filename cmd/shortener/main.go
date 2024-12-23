@@ -60,6 +60,7 @@ func (l LinksStorage) addLink(raw string) string {
 	l.mutex.Lock()
 	newShort, ok := l.linksMap[raw]
 	if ok {
+		l.mutex.Unlock()
 		return newShort
 	}
 	short := generateRandomString(10)
