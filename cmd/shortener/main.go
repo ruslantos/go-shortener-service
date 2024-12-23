@@ -1,46 +1,39 @@
 package main
 
 import (
-	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 )
 
-func mainPage(res http.ResponseWriter, req *http.Request) {
-	meta := "Header ===============\r\n"
-	for k, v := range req.Header {
-		meta += fmt.Sprintf("%s: %v\r\n", k, v)
-	}
-	meta += "Query parameters ===============\r\n"
-	for k, v := range req.URL.Query() {
-		meta += fmt.Sprintf("%s: %v\r\n", k, v)
-	}
-	fmt.Println(meta)
+type LinksStorage struct {
+	linksMap map[string]string
+	mutex    sync.Mutex
+}
 
+func (l LinksStorage) mainPage(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
 		body, err := io.ReadAll(req.Body)
-		if err != nil || body == nil {
+		if err != nil || body == nil || len(body) == 0 {
 			http.Error(res, "Error reading body", http.StatusBadRequest)
 			return
 		}
 
-		_ = addLink()
-		//v, _ := m[string(body)]
-		//if !ok {
-		//	http.Error(res, "Error reading body", http.StatusBadRequest)
-		//}
+		short := l.addLink(string(body))
 
 		res.WriteHeader(http.StatusCreated)
-		res.Write([]byte("EwHXdJfB"))
+		res.Write([]byte(short))
 	case http.MethodGet:
 		q := req.URL.Path
-		if !strings.Contains(q, "EwHXdJfB") {
+		if len(q) == 0 || q == "/" {
 			http.Error(res, "Invalid path", http.StatusBadRequest)
 			return
 		}
-		v, ok := getLink(strings.Replace(q, "/", "", 1))
+		v, ok := l.getLink(strings.Replace(q, "/", "", 1))
 		if !ok {
 			http.Error(res, "Invalid path", http.StatusBadRequest)
 		}
@@ -54,7 +47,8 @@ func mainPage(res http.ResponseWriter, req *http.Request) {
 
 func main() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", mainPage)
+	l := LinksStorage{linksMap: make(map[string]string)}
+	mux.HandleFunc("/", l.mainPage)
 
 	err := http.ListenAndServe(`:8080`, mux)
 	if err != nil {
@@ -62,14 +56,21 @@ func main() {
 	}
 }
 
-func addLink() map[string]string {
-	m := make(map[string]string)
-	m["https://practicum.yandex.ru/"] = "EwHXdJfB"
-	return m
+func (l LinksStorage) addLink(raw string) string {
+	l.mutex.Lock()
+	newShort, ok := l.linksMap[raw]
+	if ok {
+		return newShort
+	}
+	short := generateRandomString(10)
+
+	l.linksMap[raw] = short
+	l.mutex.Unlock()
+	return short
 }
-func getLink(value string) (key string, ok bool) {
-	m := addLink()
-	for k, v := range m {
+
+func (l LinksStorage) getLink(value string) (key string, ok bool) {
+	for k, v := range l.linksMap {
 		if v == value {
 			key = k
 			ok = true
@@ -77,4 +78,16 @@ func getLink(value string) (key string, ok bool) {
 		}
 	}
 	return
+}
+
+func generateRandomString(length int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	seed := rand.NewSource(time.Now().UnixNano())
+	random := rand.New(seed)
+
+	result := make([]byte, length)
+	for i := range result {
+		result[i] = charset[random.Intn(len(charset))]
+	}
+	return string(result)
 }
