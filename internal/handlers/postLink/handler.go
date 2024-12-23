@@ -1,4 +1,4 @@
-package post_link
+package postLink
 
 import (
 	"io"
