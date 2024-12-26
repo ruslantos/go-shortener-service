@@ -20,7 +20,7 @@ func New(linksStorage linksStorage) *Handler {
 
 func (h *Handler) Handle(res http.ResponseWriter, req *http.Request) {
 	body, err := io.ReadAll(req.Body)
-	if err != nil || body == nil || len(body) == 0 {
+	if err != nil || body == nil || len(body) == 0 || req.Method != http.MethodPost {
 		http.Error(res, "Error reading body", http.StatusBadRequest)
 		return
 	}

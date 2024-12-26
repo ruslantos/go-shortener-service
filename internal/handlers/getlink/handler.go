@@ -20,8 +20,8 @@ func New(linksStorage linksStorage) *Handler {
 
 func (h *Handler) Handle(res http.ResponseWriter, req *http.Request) {
 	q := req.URL.Path
-	if len(q) == 0 || q == "/" {
-		http.Error(res, "Invalid path", http.StatusBadRequest)
+	if len(q) == 0 || q == "/" || req.Method != http.MethodGet {
+		http.Error(res, "Bad Request", http.StatusBadRequest)
 		return
 	}
 	v, ok := h.linksStorage.GetLink(strings.Replace(q, "/", "", 1))
