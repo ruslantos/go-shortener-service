@@ -31,5 +31,5 @@ func (h *Handler) Handle(c *gin.Context) {
 
 	short := h.linksStorage.AddLink(string(body))
 
-	c.Data(http.StatusCreated, "text/html", []byte(config.FlagShortUrl+short))
+	c.Data(http.StatusCreated, "text/html", []byte(config.FlagShortURL+short))
 }
