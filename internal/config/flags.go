@@ -46,7 +46,7 @@ func (a *NetAddress) Set(s string) error {
 	if err != nil {
 		return err
 	}
-	a.Host = hp[0] + hp[1]
+	a.Host = hp[0] + ":" + hp[1]
 	a.Port = port
 	return nil
 }
