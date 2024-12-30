@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,7 +22,9 @@ func TestHandler_Handle_Success(t *testing.T) {
 	}
 
 	out := httptest.NewRecorder()
-	h.Handle(out, in)
+	c, _ := gin.CreateTestContext(out)
+	c.Request = in
+	h.Handle(c)
 
 	assert.Equal(t, http.StatusCreated, out.Code)
 	assert.Equal(t, "http://localhost:8080/short", out.Body.String())
@@ -37,7 +40,9 @@ func TestHandler_Handle_ErrorEmptyBody(t *testing.T) {
 	}
 
 	out := httptest.NewRecorder()
-	h.Handle(out, in)
+	c, _ := gin.CreateTestContext(out)
+	c.Request = in
+	h.Handle(c)
 
 	assert.Equal(t, http.StatusBadRequest, out.Code)
 }
@@ -52,7 +57,9 @@ func TestHandler_Handle_ErrorGet(t *testing.T) {
 	}
 
 	out := httptest.NewRecorder()
-	h.Handle(out, in)
+	c, _ := gin.CreateTestContext(out)
+	c.Request = in
+	h.Handle(c)
 
 	assert.Equal(t, http.StatusBadRequest, out.Code)
 }

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"net/http"
+	"github.com/gin-gonic/gin"
 
 	"github.com/ruslantos/go-shortener-service/internal/handlers/getlink"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/postlink"
@@ -9,13 +9,11 @@ import (
 )
 
 func main() {
-	mux := http.NewServeMux()
 	l := storage.NewLinksStorage()
-	mux.HandleFunc("POST /", postlink.New(l).Handle)
-	mux.HandleFunc("GET /", getlink.New(l).Handle)
+	r := gin.New()
 
-	err := http.ListenAndServe(`:8080`, mux)
-	if err != nil {
-		panic(err)
-	}
+	r.POST("/", postlink.New(l).Handle)
+	r.GET("/:link", getlink.New(l).Handle)
+
+	r.Run(":8080")
 }

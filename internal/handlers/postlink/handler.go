@@ -3,6 +3,8 @@ package postlink
 import (
 	"io"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type linksStorage interface {
@@ -18,15 +20,14 @@ func New(linksStorage linksStorage) *Handler {
 	return &Handler{linksStorage: linksStorage}
 }
 
-func (h *Handler) Handle(res http.ResponseWriter, req *http.Request) {
-	body, err := io.ReadAll(req.Body)
-	if err != nil || body == nil || len(body) == 0 || req.Method != http.MethodPost {
-		http.Error(res, "Error reading body", http.StatusBadRequest)
+func (h *Handler) Handle(c *gin.Context) {
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil || body == nil || len(body) == 0 || c.Request.Method != http.MethodPost {
+		c.Data(http.StatusBadRequest, "text/html", []byte("Error reading body"))
 		return
 	}
 
 	short := h.linksStorage.AddLink(string(body))
 
-	res.WriteHeader(http.StatusCreated)
-	res.Write([]byte("http://localhost:8080/" + short))
+	c.Data(http.StatusCreated, "text/html", []byte("http://localhost:8080/"+short))
 }

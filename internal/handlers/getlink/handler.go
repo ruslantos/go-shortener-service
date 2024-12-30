@@ -3,6 +3,8 @@ package getlink
 import (
 	"net/http"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 type linksStorage interface {
@@ -18,18 +20,20 @@ func New(linksStorage linksStorage) *Handler {
 	return &Handler{linksStorage: linksStorage}
 }
 
-func (h *Handler) Handle(res http.ResponseWriter, req *http.Request) {
-	q := req.URL.Path
-	if len(q) == 0 || q == "/" || req.Method != http.MethodGet {
-		http.Error(res, "Bad Request", http.StatusBadRequest)
+func (h *Handler) Handle(c *gin.Context) {
+	q := c.Request.URL.Path
+	if len(q) == 0 || q == "/" || c.Request.Method != http.MethodGet {
+		c.Data(http.StatusBadRequest, "text/html", []byte("Bad Request"))
 		return
 	}
 	v, ok := h.linksStorage.GetLink(strings.Replace(q, "/", "", 1))
 	if !ok {
-		http.Error(res, "Unknown link", http.StatusBadRequest)
+		c.Data(http.StatusBadRequest, "text/html", []byte("Unknown link"))
 		return
 	}
 
-	res.Header().Set("Location", v)
-	res.WriteHeader(http.StatusTemporaryRedirect)
+	//res.Header().Set("Location", v)
+	//res.WriteHeader(http.StatusTemporaryRedirect)
+	c.Writer.Header().Set("Location", v)
+	c.Data(http.StatusTemporaryRedirect, "text/html", nil)
 }
