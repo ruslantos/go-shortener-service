@@ -9,7 +9,7 @@ import (
 
 var (
 	FlagRunAddr  string
-	FlagShortURL string
+	FlagShortURL = "http://localhost:8080/"
 )
 
 type NetAddress struct {
@@ -27,7 +27,7 @@ func ParseFlags() {
 	flag.Parse()
 
 	if addr.Host == "" {
-		FlagShortURL = "http://localhost:8080/"
+		return
 	} else {
 		FlagShortURL = addr.String()
 	}
