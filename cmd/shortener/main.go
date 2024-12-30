@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 
+	"github.com/ruslantos/go-shortener-service/internal/config"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/getlink"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/postlink"
 	"github.com/ruslantos/go-shortener-service/internal/storage"
@@ -15,5 +16,9 @@ func main() {
 	r.POST("/", postlink.New(l).Handle)
 	r.GET("/:link", getlink.New(l).Handle)
 
-	r.Run(":8080")
+	config.ParseFlags()
+	err := r.Run(config.FlagRunAddr)
+	if err != nil {
+		panic(err)
+	}
 }

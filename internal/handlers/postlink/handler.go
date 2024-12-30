@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/ruslantos/go-shortener-service/internal/config"
 )
 
 type linksStorage interface {
@@ -29,5 +31,5 @@ func (h *Handler) Handle(c *gin.Context) {
 
 	short := h.linksStorage.AddLink(string(body))
 
-	c.Data(http.StatusCreated, "text/html", []byte("http://localhost:8080/"+short))
+	c.Data(http.StatusCreated, "text/html", []byte(config.FlagShortUrl+short))
 }
