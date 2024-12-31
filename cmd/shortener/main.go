@@ -17,7 +17,7 @@ func main() {
 	r.GET("/:link", getlink.New(l).Handle)
 
 	config.ParseFlags()
-	err := r.Run(config.FlagRunAddr)
+	err := r.Run(config.FlagServerPort)
 	if err != nil {
 		panic(err)
 	}

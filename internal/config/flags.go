@@ -3,13 +3,14 @@ package config
 import (
 	"errors"
 	"flag"
+	"os"
 	"strconv"
 	"strings"
 )
 
 var (
-	FlagRunAddr  string
-	FlagShortURL = "http://localhost:8080/"
+	FlagServerPort string
+	FlagShortURL   string
 )
 
 type NetAddress struct {
@@ -18,7 +19,7 @@ type NetAddress struct {
 }
 
 func ParseFlags() {
-	flag.StringVar(&FlagRunAddr, "a", ":8080", "address and port to run server")
+	flag.StringVar(&FlagServerPort, "a", ":8080", "address and port to run server")
 
 	addr := new(NetAddress)
 	_ = flag.Value(addr)
@@ -26,10 +27,19 @@ func ParseFlags() {
 
 	flag.Parse()
 
-	if addr.Host == "" {
-		return
-	} else {
+	envServerAddress, envBaseURL := getEnvAddresses()
+
+	if envServerAddress != "" {
+		FlagServerPort = envServerAddress
+	}
+
+	switch {
+	case envBaseURL != "":
+		FlagShortURL = envBaseURL
+	case addr.Host != "" || addr.Port != 0:
 		FlagShortURL = addr.String()
+	default:
+		FlagShortURL = "http://localhost:8080/"
 	}
 }
 
@@ -49,4 +59,8 @@ func (a *NetAddress) Set(s string) error {
 	a.Host = hp[0] + ":" + hp[1]
 	a.Port = port
 	return nil
+}
+
+func getEnvAddresses() (serverAddress string, baseURL string) {
+	return os.Getenv("SERVER_ADDRESS"), os.Getenv("BASE_URL")
 }

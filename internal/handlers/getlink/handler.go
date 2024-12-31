@@ -32,8 +32,6 @@ func (h *Handler) Handle(c *gin.Context) {
 		return
 	}
 
-	//res.Header().Set("Location", v)
-	//res.WriteHeader(http.StatusTemporaryRedirect)
 	c.Writer.Header().Set("Location", v)
 	c.Data(http.StatusTemporaryRedirect, "text/html", nil)
 }
