@@ -36,7 +36,7 @@ func ParseFlags() {
 
 	switch {
 	case envBaseURL != "":
-		FlagShortURL = envBaseURL
+		FlagShortURL = envBaseURL + "/"
 	case addr.Host != "" && addr.Port != 0:
 		FlagShortURL = addr.String()
 	default:
