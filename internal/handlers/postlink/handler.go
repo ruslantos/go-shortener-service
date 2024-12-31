@@ -1,6 +1,7 @@
 package postlink
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 
@@ -30,6 +31,6 @@ func (h *Handler) Handle(c *gin.Context) {
 	}
 
 	short := h.linksStorage.AddLink(string(body))
-
+	fmt.Printf("URl: %s\n", config.FlagShortURL+short)
 	c.Data(http.StatusCreated, "text/html", []byte(config.FlagShortURL+short))
 }
