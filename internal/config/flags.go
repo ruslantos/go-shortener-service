@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -36,11 +37,13 @@ func ParseFlags() {
 	switch {
 	case envBaseURL != "":
 		FlagShortURL = envBaseURL
-	case addr.Host != "" || addr.Port != 0:
+	case addr.Host != "" && addr.Port != 0:
 		FlagShortURL = addr.String()
 	default:
 		FlagShortURL = "http://localhost:8080/"
 	}
+	fmt.Printf("Server address: %s\n", FlagServerPort)
+	fmt.Printf("BaseURL: %s\n", FlagShortURL)
 }
 
 func (a NetAddress) String() string {
