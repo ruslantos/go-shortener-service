@@ -11,7 +11,7 @@ import (
 
 var (
 	FlagServerPort string
-	FlagShortURL   string
+	FlagShortURL   = "http://localhost:8080/"
 )
 
 type NetAddress struct {
