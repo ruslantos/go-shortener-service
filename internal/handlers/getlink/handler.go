@@ -22,10 +22,7 @@ func New(linksStorage linksStorage) *Handler {
 
 func (h *Handler) Handle(c *gin.Context) {
 	q := c.Request.URL.Path
-	//if len(q) == 0 || q == "/" || c.Request.Method != http.MethodGet {
-	//	c.Data(http.StatusBadRequest, "text/html", []byte("Bad Request"))
-	//	return
-	//}
+
 	v, ok := h.linksStorage.GetLink(strings.Replace(q, "/", "", 1))
 	if !ok {
 		c.Data(http.StatusBadRequest, "text/html", []byte("Unknown link"))
