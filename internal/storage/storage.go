@@ -1,9 +1,8 @@
 package storage
 
 import (
-	"math/rand"
+	"strconv"
 	"sync"
-	"time"
 )
 
 type LinksStorage struct {
@@ -19,38 +18,23 @@ func NewLinksStorage() *LinksStorage {
 }
 
 func (l LinksStorage) AddLink(raw string) string {
-	l.mutex.Lock()
-	newShort, ok := l.linksMap[raw]
-	if ok {
-		l.mutex.Unlock()
-		return newShort
-	}
-	short := generateRandomString(10)
+	short := l.getShortValue()
 
-	l.linksMap[raw] = short
+	l.mutex.Lock()
+	l.linksMap[short] = raw
 	l.mutex.Unlock()
 	return short
 }
 
 func (l LinksStorage) GetLink(value string) (key string, ok bool) {
-	for k, v := range l.linksMap {
-		if v == value {
-			key = k
-			ok = true
-			return
-		}
-	}
-	return
+	result, ok := l.linksMap[value]
+	return result, ok
 }
 
-func generateRandomString(length int) string {
-	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	seed := rand.NewSource(time.Now().UnixNano())
-	random := rand.New(seed)
+func (l LinksStorage) getShortValue() string {
+	l.mutex.Lock()
+	count := len(l.linksMap)
+	l.mutex.Unlock()
 
-	result := make([]byte, length)
-	for i := range result {
-		result[i] = charset[random.Intn(len(charset))]
-	}
-	return string(result)
+	return strconv.Itoa(count + 1)
 }

@@ -24,8 +24,8 @@ func New(linksStorage linksStorage) *Handler {
 }
 
 func (h *Handler) Handle(c *gin.Context) {
-	body, err := io.ReadAll(c.Request.Body)
-	if err != nil || body == nil || len(body) == 0 || c.Request.Method != http.MethodPost {
+	body, _ := io.ReadAll(c.Request.Body)
+	if len(body) == 0 {
 		c.Data(http.StatusBadRequest, "text/html", []byte("Error reading body"))
 		return
 	}
