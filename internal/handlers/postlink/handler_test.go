@@ -47,19 +47,19 @@ func TestHandler_Handle_ErrorEmptyBody(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, out.Code)
 }
 
-func _TestHandler_Handle_ErrorGet(t *testing.T) {
-	extend := "123"
-	storage := &MocklinksStorage{}
-	h := New(storage)
-	in := &http.Request{
-		Method: http.MethodGet,
-		Body:   io.NopCloser(strings.NewReader(extend)),
-	}
-
-	out := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(out)
-	c.Request = in
-	h.Handle(c)
-
-	assert.Equal(t, http.StatusBadRequest, out.Code)
-}
+// func TestHandler_Handle_ErrorGet(t *testing.T) {
+//	extend := "123"
+//	storage := &MocklinksStorage{}
+//	h := New(storage)
+//	in := &http.Request{
+//		Method: http.MethodGet,
+//		Body:   io.NopCloser(strings.NewReader(extend)),
+//	}
+//
+//	out := httptest.NewRecorder()
+//	c, _ := gin.CreateTestContext(out)
+//	c.Request = in
+//	h.Handle(c)
+//
+//	assert.Equal(t, http.StatusBadRequest, out.Code)
+//}
