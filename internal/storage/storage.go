@@ -26,7 +26,7 @@ func (l LinksStorage) AddLink(raw string) string {
 	return short
 }
 
-func (l LinksStorage) GetLink(value string) (key string, ok bool) {
+func (l LinksStorage) GetLink(value string) (string, bool) {
 	result, ok := l.linksMap[value]
 	return result, ok
 }
