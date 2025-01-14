@@ -18,12 +18,7 @@ func NewLinksStorage() *LinksStorage {
 }
 
 func (l LinksStorage) AddLink(raw string) string {
-	short := l.getShortValue()
-
-	l.mutex.Lock()
-	l.linksMap[short] = raw
-	l.mutex.Unlock()
-	return short
+	return l.getShortValue(raw)
 }
 
 func (l LinksStorage) GetLink(value string) (string, bool) {
@@ -31,10 +26,12 @@ func (l LinksStorage) GetLink(value string) (string, bool) {
 	return result, ok
 }
 
-func (l LinksStorage) getShortValue() string {
+func (l LinksStorage) getShortValue(raw string) string {
 	l.mutex.Lock()
 	count := len(l.linksMap)
+	short := strconv.Itoa(count + 1)
+	l.linksMap[short] = raw
 	l.mutex.Unlock()
 
-	return strconv.Itoa(count + 1)
+	return short
 }
