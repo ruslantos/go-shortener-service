@@ -1,0 +1,14 @@
+inpackage: true
+with-expecter: true
+filename: "mock_{{.InterfaceName}}_test.go"
+packages:
+  github.com/ruslantos/go-shortener-service/internal/handlers/getlink:
+    config:
+      dir: internal/handlers/getlink
+    interfaces:
+      linksStorage:
+  github.com/ruslantos/go-shortener-service/internal/handlers/postlink:
+    config:
+      dir: internal/handlers/postlink
+    interfaces:
+      linksStorage:
