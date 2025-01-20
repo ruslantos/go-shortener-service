@@ -3,7 +3,6 @@ package config
 import (
 	"errors"
 	"flag"
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -12,6 +11,7 @@ import (
 var (
 	FlagServerPort string
 	FlagShortURL   = "http://localhost:8080/"
+	FlagLogLevel   = "info"
 )
 
 type NetAddress struct {
@@ -21,6 +21,7 @@ type NetAddress struct {
 
 func ParseFlags() {
 	flag.StringVar(&FlagServerPort, "a", ":8080", "address and port to run server")
+	flag.StringVar(&FlagLogLevel, "l", "info", "log level")
 
 	addr := new(NetAddress)
 	_ = flag.Value(addr)
@@ -42,8 +43,10 @@ func ParseFlags() {
 	default:
 		FlagShortURL = "http://localhost:8080/"
 	}
-	fmt.Printf("Server address: %s\n", FlagServerPort)
-	fmt.Printf("BaseURL: %s\n", FlagShortURL)
+
+	if envLogLevel := os.Getenv("LOG_LEVEL"); envLogLevel != "" {
+		FlagLogLevel = envLogLevel
+	}
 }
 
 func (a NetAddress) String() string {
