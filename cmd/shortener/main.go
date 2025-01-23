@@ -7,6 +7,7 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/config"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/getlink"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/postlink"
+	"github.com/ruslantos/go-shortener-service/internal/handlers/shorten"
 	log "github.com/ruslantos/go-shortener-service/internal/logger"
 	"github.com/ruslantos/go-shortener-service/internal/storage"
 )
@@ -23,6 +24,7 @@ func main() {
 	r.Use(log.LoggerMiddleware(logger))
 
 	r.POST("/", postlink.New(l).Handle)
+	r.POST("/api/shorten", shorten.New(l).Handle)
 	r.GET("/:link", getlink.New(l).Handle)
 
 	config.ParseFlags()
