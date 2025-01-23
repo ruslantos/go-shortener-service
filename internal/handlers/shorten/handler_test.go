@@ -19,7 +19,7 @@ func TestHandler_Handle_Success(t *testing.T) {
 	storage.EXPECT().AddLink(extend).Return("short")
 	h := New(storage)
 	req := ShortenRequest{
-		Url: extend,
+		URL: extend,
 	}
 	marshalled, err := json.Marshal(req)
 	assert.NoError(t, err)

@@ -36,7 +36,7 @@ func (h *Handler) Handle(c *gin.Context) {
 		return
 	}
 
-	short := h.linksStorage.AddLink(body.Url)
+	short := h.linksStorage.AddLink(body.URL)
 	resp := ShortenResponse{Result: config.FlagShortURL + short}
 	result, err := json.Marshal(resp)
 	if err != nil {
