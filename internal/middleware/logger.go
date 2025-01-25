@@ -1,4 +1,4 @@
-package logger
+package middleware
 
 import (
 	"time"
@@ -12,7 +12,7 @@ type responseWriter struct {
 	size int
 }
 
-func LoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
+func Logger(logger *zap.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 
