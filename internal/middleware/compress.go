@@ -27,7 +27,7 @@ func Gzip() gin.HandlerFunc {
 		//writer := &responseWriterGzip{ResponseWriter: c.Writer, gzipWriter: gz}
 		//c.Writer = writer
 		//
-		//c.Next()
+		c.Next()
 		//
 		//if err := gz.Close(); err != nil {
 		//	c.Error(err)
