@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"bytes"
 	"compress/gzip"
 	"strings"
 
@@ -21,22 +20,22 @@ func Gzip() gin.HandlerFunc {
 			return
 		}
 
-		var b bytes.Buffer
-		gz := gzip.NewWriter(&b)
-		defer gz.Close()
-
-		writer := &responseWriterGzip{ResponseWriter: c.Writer, gzipWriter: gz}
-		c.Writer = writer
-
-		c.Next()
-
-		if err := gz.Close(); err != nil {
-			c.Error(err)
-			return
-		}
-
-		c.Header("Content-Encoding", "gzip")
-		c.Header("Content-Type", writer.Header().Get("Content-Type"))
-		c.Writer.Write(b.Bytes())
+		//var b bytes.Buffer
+		//gz := gzip.NewWriter(&b)
+		//defer gz.Close()
+		//
+		//writer := &responseWriterGzip{ResponseWriter: c.Writer, gzipWriter: gz}
+		//c.Writer = writer
+		//
+		//c.Next()
+		//
+		//if err := gz.Close(); err != nil {
+		//	c.Error(err)
+		//	return
+		//}
+		//
+		//c.Header("Content-Encoding", "gzip")
+		//c.Header("Content-Type", writer.Header().Get("Content-Type"))
+		//c.Writer.Write(b.Bytes())
 	}
 }
