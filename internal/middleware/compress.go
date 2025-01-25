@@ -16,7 +16,7 @@ type responseWriterGzip struct {
 
 func Gzip() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if !strings.Contains(c.GetHeader("Accept-Encoding"), "gzip") {
+		if !isHeadersExist(c) {
 			c.Next()
 			return
 		}
@@ -53,4 +53,10 @@ func (w *responseWriterGzip) WriteHeader(status int) {
 // Write writes the response body to the gzip writer.
 func (w *responseWriterGzip) Write(data []byte) (int, error) {
 	return w.gzipWriter.Write(data)
+}
+
+func isHeadersExist(c *gin.Context) bool {
+	return (strings.Contains(c.GetHeader("Accept-Encoding"), "gzip")) &&
+		(c.GetHeader("Content-Type") == "application/json" ||
+			c.GetHeader("Content-Type") == "text/html")
 }
