@@ -3,6 +3,7 @@ package middleware
 import (
 	"bytes"
 	"compress/gzip"
+	"io"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -22,6 +23,7 @@ func Gzip() gin.HandlerFunc {
 		}
 
 		var b bytes.Buffer
+		body, _ := io.ReadAll(c.Request.Body)
 		gz := gzip.NewWriter(&b)
 		defer gz.Close()
 
@@ -40,7 +42,7 @@ func Gzip() gin.HandlerFunc {
 		//c.Writer.Write(b.Bytes())
 
 		c.Writer.WriteHeader(writer.status)
-		c.Writer.Write(b.Bytes())
+		c.Writer.Write(body)
 	}
 }
 
