@@ -38,9 +38,13 @@ func main() {
 
 	r.Use(compress.GzipMiddleware, compress.GzipMiddleware2, middleware.LoggerChi(logger))
 
-	r.Post("/", postlink.New(l, fileProducer).Handle)
-	r.Get("/{link}", getlink.New(l).Handle)
-	r.Post("/api/shorten", shorten.New(l, fileProducer).Handle)
+	postLinkHandler := postlink.New(l, fileProducer)
+	getLinkHandler := getlink.New(l)
+	shortenHandler := shorten.New(l, fileProducer)
+
+	r.Post("/", postLinkHandler.Handle)
+	r.Get("/{link}", getLinkHandler.Handle)
+	r.Post("/api/shorten", shortenHandler.Handle)
 
 	err = http.ListenAndServe(config.FlagServerPort, r)
 	if err != nil {
