@@ -50,7 +50,7 @@ func main() {
 
 	postLinkHandler := postlink.New(linkService)
 	getLinkHandler := getlink.New(linkService)
-	shortenHandler := shorten.New(linkRepo, fileProducer)
+	shortenHandler := shorten.New(linkService)
 
 	r.Post("/", postLinkHandler.Handle)
 	r.Get("/{link}", getLinkHandler.Handle)
