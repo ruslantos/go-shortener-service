@@ -6,20 +6,27 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
 	"github.com/ruslantos/go-shortener-service/internal/config"
+	fileJob "github.com/ruslantos/go-shortener-service/internal/file"
 )
 
 type linksStorage interface {
 	AddLink(raw string) string
 }
 
-type Handler struct {
-	linksStorage linksStorage
+type file interface {
+	WriteEvent(event *fileJob.Event) error
 }
 
-func New(linksStorage linksStorage) *Handler {
-	return &Handler{linksStorage: linksStorage}
+type Handler struct {
+	linksStorage linksStorage
+	file         file
+}
+
+func New(linksStorage linksStorage, file file) *Handler {
+	return &Handler{linksStorage: linksStorage, file: file}
 }
 
 func (h *Handler) Handle(c *gin.Context) {
@@ -41,6 +48,17 @@ func (h *Handler) Handle(c *gin.Context) {
 	result, err := json.Marshal(resp)
 	if err != nil {
 		c.Data(http.StatusBadRequest, "text/html", []byte("Marshalling error"))
+		return
+	}
+
+	event := &fileJob.Event{
+		ID:          uuid.New().String(),
+		ShortURL:    short,
+		OriginalURL: body.URL,
+	}
+	err = h.file.WriteEvent(event)
+	if err != nil {
+		c.Data(http.StatusInternalServerError, "application/json", []byte(err.Error()))
 		return
 	}
 

@@ -4,7 +4,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
 	"github.com/ruslantos/go-shortener-service/internal/config"
@@ -29,10 +28,10 @@ func New(linksStorage linksStorage, file file) *Handler {
 	return &Handler{linksStorage: linksStorage, file: file}
 }
 
-func (h *Handler) Handle(c *gin.Context) {
-	body, _ := io.ReadAll(c.Request.Body)
+func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
+	body, _ := io.ReadAll(r.Body)
 	if len(body) == 0 {
-		c.Data(http.StatusBadRequest, "text/html", []byte("Error reading body"))
+		http.Error(w, "Error reading body", http.StatusBadRequest)
 		return
 	}
 
@@ -45,9 +44,12 @@ func (h *Handler) Handle(c *gin.Context) {
 	}
 	err := h.file.WriteEvent(event)
 	if err != nil {
-		c.Data(http.StatusInternalServerError, "text/html", []byte(err.Error()))
+		http.Error(w, "Write event error", http.StatusInternalServerError)
+
 		return
 	}
 
-	c.Data(http.StatusCreated, "text/html", []byte(config.FlagShortURL+short))
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(config.FlagShortURL + short))
 }
