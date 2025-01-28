@@ -42,16 +42,14 @@ func main() {
 		panic(err)
 	}
 
-	r := chi.NewRouter()
-
-	r.Use(compress.GzipMiddleware, compress.GzipMiddleware2, logger.LoggerChi(log))
-
 	linkService := links.NewLinkService(linkRepo, fileProducer)
 
 	postLinkHandler := postlink.New(linkService)
 	getLinkHandler := getlink.New(linkService)
 	shortenHandler := shorten.New(linkService)
 
+	r := chi.NewRouter()
+	r.Use(compress.GzipMiddlewareWriter, compress.GzipMiddlewareReader, logger.LoggerChi(log))
 	r.Post("/", postLinkHandler.Handle)
 	r.Get("/{link}", getLinkHandler.Handle)
 	r.Post("/api/shorten", shortenHandler.Handle)
