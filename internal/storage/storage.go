@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	fileJob "github.com/ruslantos/go-shortener-service/internal/files"
-	mid "github.com/ruslantos/go-shortener-service/internal/middleware"
+	mid "github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 )
 
 type file interface {

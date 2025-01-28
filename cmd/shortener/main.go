@@ -11,13 +11,13 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/handlers/getlink"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/postlink"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/shorten"
-	"github.com/ruslantos/go-shortener-service/internal/middleware"
-	"github.com/ruslantos/go-shortener-service/internal/middleware/compress2"
+	"github.com/ruslantos/go-shortener-service/internal/middleware/compress"
+	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/storage"
 )
 
 func main() {
-	logger, err := zap.NewDevelopment()
+	log, err := zap.NewDevelopment()
 	if err != nil {
 		panic("cannot initialize zap")
 	}
@@ -43,7 +43,7 @@ func main() {
 
 	r := chi.NewRouter()
 
-	r.Use(compress.GzipMiddleware, compress.GzipMiddleware2, middleware.LoggerChi(logger))
+	r.Use(compress.GzipMiddleware, compress.GzipMiddleware2, logger.LoggerChi(log))
 
 	postLinkHandler := postlink.New(l, fileProducer)
 	getLinkHandler := getlink.New(l)
