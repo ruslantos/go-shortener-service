@@ -7,11 +7,12 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/ruslantos/go-shortener-service/internal/config"
+	fileClient "github.com/ruslantos/go-shortener-service/internal/file"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/getlink"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/postlink"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/shorten"
 	"github.com/ruslantos/go-shortener-service/internal/middleware"
-	"github.com/ruslantos/go-shortener-service/internal/middleware/compress2"
+	"github.com/ruslantos/go-shortener-service/internal/middleware/compress"
 	"github.com/ruslantos/go-shortener-service/internal/storage"
 )
 
@@ -21,22 +22,29 @@ func main() {
 		panic("cannot initialize zap")
 	}
 	defer logger.Sync()
+	config.ParseFlags()
 
-	l := storage.NewLinksStorage()
+	fileProducer, err := fileClient.NewProducer(config.FileStoragePath + "links")
+	fileConsumer, err := fileClient.NewConsumer(config.FileStoragePath + "links")
+
+	l := storage.NewLinksStorage(fileConsumer)
+	err = l.InitLinkMap()
+	if err != nil {
+		panic(err)
+	}
 	r := gin.New()
 	//r.Use(middleware.Logger(logger), middleware.Gzip())
 	//r.Use(middleware.Gzip())
 
 	placeholderHandler := func(w http.ResponseWriter, r *http.Request) {}
-	wrappedHandler := compress2.GzipMiddleware(placeholderHandler)
+	wrappedHandler := compress.GzipMiddleware(placeholderHandler)
 
 	r.Use(middleware.Logger(logger), wrapHTTPHandlerFunc(wrappedHandler))
 
-	r.POST("/", postlink.New(l).Handle)
-	r.POST("/api/shorten", shorten.New(l).Handle)
+	r.POST("/", postlink.New(l, fileProducer).Handle)
+	r.POST("/api/shorten", shorten.New(l, fileProducer).Handle)
 	r.GET("/:link", getlink.New(l).Handle)
 
-	config.ParseFlags()
 	err = r.Run(config.FlagServerPort)
 	if err != nil {
 		panic(err)
