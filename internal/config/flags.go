@@ -55,7 +55,7 @@ func ParseFlags() {
 	}
 
 	if fileStoragePath := os.Getenv("FILE_STORAGE_PATH"); fileStoragePath != "" {
-		FileStoragePath = "." + fileStoragePath
+		FileStoragePath = "." + fileStoragePath + "/"
 	}
 	logger.GetLogger().Info("Init service config",
 		zap.String("SERVER_PORT", FlagServerPort),
