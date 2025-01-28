@@ -3,11 +3,8 @@ package getlink
 import (
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 
-	"github.com/AlekSi/pointer"
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,32 +12,23 @@ func TestHandler_Handle_Success(t *testing.T) {
 	storage := &MocklinksStorage{}
 	storage.EXPECT().GetLink("short").Return("extend", true)
 	h := New(storage)
-	in := &http.Request{
-		Method: http.MethodGet,
-		URL:    pointer.To(url.URL{Path: "short"})}
+	req, err := http.NewRequest(http.MethodGet, "short", nil)
+	assert.NoError(t, err)
+	rr := httptest.NewRecorder()
 
-	out := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(out)
-	c.Request = in
-	h.Handle(c)
-
-	assert.Equal(t, http.StatusTemporaryRedirect, out.Code)
-	assert.Equal(t, "extend", out.Header().Get("Location"))
+	h.Handle(rr, req)
+	assert.Equal(t, http.StatusTemporaryRedirect, rr.Code)
+	assert.Equal(t, "extend", rr.Header().Get("Location"))
 }
 
 func TestHandler_Handle_BadRequest(t *testing.T) {
 	storage := &MocklinksStorage{}
 	storage.EXPECT().GetLink("short").Return("", false)
 	h := New(storage)
-	in := &http.Request{
-		Method: http.MethodGet,
-		URL:    pointer.To(url.URL{Path: "short"})}
+	req, err := http.NewRequest(http.MethodGet, "short", nil)
+	assert.NoError(t, err)
+	rr := httptest.NewRecorder()
 
-	out := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(out)
-	c.Request = in
-	h.Handle(c)
-
-	assert.Equal(t, http.StatusBadRequest, out.Code)
-	assert.Equal(t, "", out.Header().Get("Location"))
+	h.Handle(rr, req)
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
 }

@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"sync"
 
-	fileJob "github.com/ruslantos/go-shortener-service/internal/file"
+	fileJob "github.com/ruslantos/go-shortener-service/internal/files"
 	mid "github.com/ruslantos/go-shortener-service/internal/middleware"
 )
 

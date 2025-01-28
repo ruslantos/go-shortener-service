@@ -12,3 +12,10 @@ packages:
       dir: internal/handlers/postlink
     interfaces:
       linksStorage:
+      file:
+  github.com/ruslantos/go-shortener-service/internal/handlers/shorten:
+    config:
+      dir: internal/handlers/shorten
+    interfaces:
+      linksStorage:
+      file:

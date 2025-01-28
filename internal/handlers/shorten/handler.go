@@ -5,11 +5,10 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
 	"github.com/ruslantos/go-shortener-service/internal/config"
-	fileJob "github.com/ruslantos/go-shortener-service/internal/file"
+	fileJob "github.com/ruslantos/go-shortener-service/internal/files"
 )
 
 type linksStorage interface {
@@ -29,17 +28,17 @@ func New(linksStorage linksStorage, file file) *Handler {
 	return &Handler{linksStorage: linksStorage, file: file}
 }
 
-func (h *Handler) Handle(c *gin.Context) {
-	bodyRaw, _ := io.ReadAll(c.Request.Body)
+func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
+	bodyRaw, _ := io.ReadAll(r.Body)
 	if len(bodyRaw) == 0 {
-		c.Data(http.StatusBadRequest, "text/html", []byte("Error reading body"))
+		http.Error(w, "Error reading body", http.StatusBadRequest)
 		return
 	}
 
 	var body ShortenRequest
 	err := json.Unmarshal(bodyRaw, &body)
 	if err != nil {
-		c.Data(http.StatusBadRequest, "text/html", []byte("Unmarshalling error"))
+		http.Error(w, "Unmarshalling error", http.StatusBadRequest)
 		return
 	}
 
@@ -47,7 +46,7 @@ func (h *Handler) Handle(c *gin.Context) {
 	resp := ShortenResponse{Result: config.FlagShortURL + short}
 	result, err := json.Marshal(resp)
 	if err != nil {
-		c.Data(http.StatusBadRequest, "text/html", []byte("Marshalling error"))
+		http.Error(w, "Marshalling error", http.StatusBadRequest)
 		return
 	}
 
@@ -58,9 +57,12 @@ func (h *Handler) Handle(c *gin.Context) {
 	}
 	err = h.file.WriteEvent(event)
 	if err != nil {
-		c.Data(http.StatusInternalServerError, "application/json", []byte(err.Error()))
+		http.Error(w, "Write event error", http.StatusInternalServerError)
 		return
 	}
 
-	c.Data(http.StatusCreated, "application/json", result)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(result)
+	return
 }

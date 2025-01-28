@@ -3,16 +3,16 @@ package main
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 
 	"github.com/ruslantos/go-shortener-service/internal/config"
-	fileClient "github.com/ruslantos/go-shortener-service/internal/file"
+	fileClient "github.com/ruslantos/go-shortener-service/internal/files"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/getlink"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/postlink"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/shorten"
 	"github.com/ruslantos/go-shortener-service/internal/middleware"
-	"github.com/ruslantos/go-shortener-service/internal/middleware/compress"
+	"github.com/ruslantos/go-shortener-service/internal/middleware/compress2"
 	"github.com/ruslantos/go-shortener-service/internal/storage"
 )
 
@@ -22,6 +22,7 @@ func main() {
 		panic("cannot initialize zap")
 	}
 	defer logger.Sync()
+
 	config.ParseFlags()
 
 	fileProducer, err := fileClient.NewProducer(config.FileStoragePath + "links")
@@ -32,27 +33,17 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	r := gin.New()
-	//r.Use(middleware.Logger(logger), middleware.Gzip())
-	//r.Use(middleware.Gzip())
 
-	placeholderHandler := func(w http.ResponseWriter, r *http.Request) {}
-	wrappedHandler := compress.GzipMiddleware(placeholderHandler)
+	r := chi.NewRouter()
 
-	r.Use(middleware.Logger(logger), wrapHTTPHandlerFunc(wrappedHandler))
+	r.Use(compress.GzipMiddleware, compress.GzipMiddleware2, middleware.LoggerChi(logger))
 
-	r.POST("/", postlink.New(l, fileProducer).Handle)
-	r.POST("/api/shorten", shorten.New(l, fileProducer).Handle)
-	r.GET("/:link", getlink.New(l).Handle)
+	r.Post("/", postlink.New(l, fileProducer).Handle)
+	r.Get("/{link}", getlink.New(l).Handle)
+	r.Post("/api/shorten", shorten.New(l, fileProducer).Handle)
 
-	err = r.Run(config.FlagServerPort)
+	err = http.ListenAndServe(config.FlagServerPort, r)
 	if err != nil {
 		panic(err)
-	}
-}
-
-func wrapHTTPHandlerFunc(h http.HandlerFunc) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		h.ServeHTTP(c.Writer, c.Request)
 	}
 }

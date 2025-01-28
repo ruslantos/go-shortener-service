@@ -1,4 +1,4 @@
-package file
+package files
 
 import (
 	"encoding/json"
@@ -69,7 +69,7 @@ func NewConsumer(filename string) (*Consumer, error) {
 	return &Consumer{
 		file: file,
 		// создаём новый Reader
-		//reader: bufio.NewReader(file),
+		//reader: bufio.NewReader(files),
 		decoder: json.NewDecoder(file),
 	}, nil
 }

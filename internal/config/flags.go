@@ -23,7 +23,7 @@ type NetAddress struct {
 func ParseFlags() {
 	flag.StringVar(&FlagServerPort, "a", ":8080", "address and port to run server")
 	flag.StringVar(&FlagLogLevel, "l", "info", "log level")
-	flag.StringVar(&FileStoragePath, "f", "./internal/file/", "file storage path")
+	flag.StringVar(&FileStoragePath, "f", "./internal/files/", "files storage path")
 
 	addr := new(NetAddress)
 	_ = flag.Value(addr)
