@@ -5,27 +5,19 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/google/uuid"
-
 	"github.com/ruslantos/go-shortener-service/internal/config"
-	fileJob "github.com/ruslantos/go-shortener-service/internal/files"
 )
 
-type linksStorage interface {
-	AddLink(raw string) string
-}
-
-type file interface {
-	WriteEvent(event *fileJob.Event) error
+type linksService interface {
+	Add(long string) (string, error)
 }
 
 type Handler struct {
-	linksStorage linksStorage
-	file         file
+	linksService linksService
 }
 
-func New(linksStorage linksStorage, file file) *Handler {
-	return &Handler{linksStorage: linksStorage, file: file}
+func New(linksService linksService) *Handler {
+	return &Handler{linksService: linksService}
 }
 
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
@@ -42,22 +34,16 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	short := h.linksStorage.AddLink(body.URL)
+	short, err := h.linksService.Add(body.URL)
+	if err != nil {
+		http.Error(w, "Write event error", http.StatusInternalServerError)
+		return
+	}
+
 	resp := ShortenResponse{Result: config.FlagShortURL + short}
 	result, err := json.Marshal(resp)
 	if err != nil {
 		http.Error(w, "Marshalling error", http.StatusBadRequest)
-		return
-	}
-
-	event := &fileJob.Event{
-		ID:          uuid.New().String(),
-		ShortURL:    short,
-		OriginalURL: body.URL,
-	}
-	err = h.file.WriteEvent(event)
-	if err != nil {
-		http.Error(w, "Write event error", http.StatusInternalServerError)
 		return
 	}
 

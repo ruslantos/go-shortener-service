@@ -1,43 +1,50 @@
 package shorten
 
-//func TestHandler_Handle_Success(t *testing.T) {
-//	extend := "http://ivghfkudbptp.biz/qqlcxvlwy1o/pbmze/ad4hdsyf"
-//	storage := &MocklinksStorage{}
-//	storage.EXPECT().AddLink(extend).Return("short")
-//	h := New(storage)
-//	req := ShortenRequest{
-//		URL: extend,
-//	}
-//	marshalled, err := json.Marshal(req)
-//	assert.NoError(t, err)
-//
-//	in := &http.Request{
-//		Method: http.MethodPost,
-//		Body:   io.NopCloser(bytes.NewReader(marshalled)),
-//	}
-//
-//	out := httptest.NewRecorder()
-//	c, _ := gin.CreateTestContext(out)
-//	c.Request = in
-//	h.Handle(c)
-//
-//	assert.Equal(t, http.StatusCreated, out.Code)
-//	assert.Equal(t, `{"result":"http://localhost:8080/short"}`, out.Body.String())
-//}
+import (
+	"bytes"
+	"encoding/json"
+	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 
-//func TestHandler_Handle_ErrorEmptyBody(t *testing.T) {
-//	extend := ""
-//	storage := &MocklinksStorage{}
-//	h := New(storage)
-//	in := &http.Request{
-//		Method: http.MethodPost,
-//		Body:   io.NopCloser(strings.NewReader(extend)),
-//	}
-//
-//	out := httptest.NewRecorder()
-//	c, _ := gin.CreateTestContext(out)
-//	c.Request = in
-//	h.Handle(c)
-//
-//	assert.Equal(t, http.StatusBadRequest, out.Code)
-//}
+	"github.com/stretchr/testify/assert"
+)
+
+func TestHandler_Handle_Success(t *testing.T) {
+	extend := "http://ivghfkudbptp.biz/qqlcxvlwy1o/pbmze/ad4hdsyf"
+	service := &MocklinksService{}
+	service.EXPECT().Add(extend).Return("short", nil)
+	h := New(service)
+	in := ShortenRequest{
+		URL: extend,
+	}
+	marshalled, err := json.Marshal(in)
+	assert.NoError(t, err)
+	req, err := http.NewRequest(http.MethodPost, "/api/shorten", io.NopCloser(bytes.NewReader(marshalled)))
+	assert.NoError(t, err)
+	rr := httptest.NewRecorder()
+
+	h.Handle(rr, req)
+	assert.Equal(t, http.StatusCreated, rr.Code)
+	assert.Equal(t, `{"result":"http://localhost:8080/short"}`, rr.Body.String())
+}
+
+func TestHandler_Handle_Error(t *testing.T) {
+	extend := ""
+	service := &MocklinksService{}
+	service.EXPECT().Add(extend).Return("short", errors.New("some error"))
+	h := New(service)
+	in := ShortenRequest{
+		URL: extend,
+	}
+	marshalled, err := json.Marshal(in)
+	assert.NoError(t, err)
+	req, err := http.NewRequest(http.MethodPost, "/api/shorten", io.NopCloser(bytes.NewReader(marshalled)))
+	assert.NoError(t, err)
+	rr := httptest.NewRecorder()
+
+	h.Handle(rr, req)
+	assert.Equal(t, http.StatusInternalServerError, rr.Code)
+}

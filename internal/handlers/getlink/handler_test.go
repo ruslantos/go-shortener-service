@@ -1,6 +1,7 @@
 package getlink
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -9,9 +10,9 @@ import (
 )
 
 func TestHandler_Handle_Success(t *testing.T) {
-	storage := &MocklinksStorage{}
-	storage.EXPECT().GetLink("short").Return("extend", true)
-	h := New(storage)
+	service := &MocklinksService{}
+	service.EXPECT().Get("short").Return("extend", nil)
+	h := New(service)
 	req, err := http.NewRequest(http.MethodGet, "short", nil)
 	assert.NoError(t, err)
 	rr := httptest.NewRecorder()
@@ -22,8 +23,8 @@ func TestHandler_Handle_Success(t *testing.T) {
 }
 
 func TestHandler_Handle_BadRequest(t *testing.T) {
-	storage := &MocklinksStorage{}
-	storage.EXPECT().GetLink("short").Return("", false)
+	storage := &MocklinksService{}
+	storage.EXPECT().Get("short").Return("", errors.New("some error"))
 	h := New(storage)
 	req, err := http.NewRequest(http.MethodGet, "short", nil)
 	assert.NoError(t, err)
@@ -31,4 +32,5 @@ func TestHandler_Handle_BadRequest(t *testing.T) {
 
 	h.Handle(rr, req)
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	assert.Equal(t, "failed to get long ling: some error\n", rr.Body.String())
 }

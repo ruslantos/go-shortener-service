@@ -13,9 +13,7 @@ type Event struct {
 }
 
 type Producer struct {
-	file *os.File
-	// добавляем Writer в Producer
-	//scanner *bufio.Scanner
+	file    *os.File
 	encoder *json.Encoder
 }
 
@@ -26,37 +24,17 @@ func NewProducer(filename string) (*Producer, error) {
 	}
 
 	return &Producer{
-		file: file,
-		// создаём новый Writer
+		file:    file,
 		encoder: json.NewEncoder(file),
 	}, nil
 }
 
 func (p *Producer) WriteEvent(event *Event) error {
-	//data, err := json.Marshal(&event)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//// записываем событие в буфер
-	//if _, err := p.writer.Write(data); err != nil {
-	//	return err
-	//}
-	//
-	//// добавляем перенос строки
-	//if err := p.writer.WriteByte('\n'); err != nil {
-	//	return err
-	//}
-	//
-	//// записываем буфер в файл
-	//return p.writer.Flush()
 	return p.encoder.Encode(&event)
 }
 
 type Consumer struct {
-	file *os.File
-	// добавляем reader в Consumer
-	//reader *bufio.Reader
+	file    *os.File
 	decoder *json.Decoder
 }
 
@@ -67,27 +45,13 @@ func NewConsumer(filename string) (*Consumer, error) {
 	}
 
 	return &Consumer{
-		file: file,
-		// создаём новый Reader
-		//reader: bufio.NewReader(files),
+		file:    file,
 		decoder: json.NewDecoder(file),
 	}, nil
 }
 
 func (c *Consumer) ReadEvent() (*Event, error) {
-	// читаем данные до символа переноса строки
-	//data, err := c.reader.ReadBytes('\n')
-	//if err != nil {
-	//	return nil, err
-	//}
-
-	// преобразуем данные из JSON-представления в структуру
 	event := Event{}
-	//err = json.Unmarshal(data, &event)
-	//if err != nil {
-	//	return nil, err
-	//}
-
 	if err := c.decoder.Decode(&event); err != nil {
 		return nil, err
 	}

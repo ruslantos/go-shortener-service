@@ -11,6 +11,7 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/handlers/getlink"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/postlink"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/shorten"
+	"github.com/ruslantos/go-shortener-service/internal/links"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/compress"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/storage"
@@ -35,8 +36,8 @@ func main() {
 		panic(err)
 	}
 
-	l := storage.NewLinksStorage(fileConsumer)
-	err = l.InitLinkMap()
+	linkRepo := storage.NewLinksStorage(fileConsumer)
+	err = linkRepo.InitLinkMap()
 	if err != nil {
 		panic(err)
 	}
@@ -45,9 +46,11 @@ func main() {
 
 	r.Use(compress.GzipMiddleware, compress.GzipMiddleware2, logger.LoggerChi(log))
 
-	postLinkHandler := postlink.New(l, fileProducer)
-	getLinkHandler := getlink.New(l)
-	shortenHandler := shorten.New(l, fileProducer)
+	linkService := links.NewLinkService(linkRepo, fileProducer)
+
+	postLinkHandler := postlink.New(linkService)
+	getLinkHandler := getlink.New(linkService)
+	shortenHandler := shorten.New(linkRepo, fileProducer)
 
 	r.Post("/", postLinkHandler.Handle)
 	r.Get("/{link}", getLinkHandler.Handle)

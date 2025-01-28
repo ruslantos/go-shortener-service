@@ -1,31 +1,23 @@
 package postlink
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 
-	"github.com/google/uuid"
-
 	"github.com/ruslantos/go-shortener-service/internal/config"
-	fileJob "github.com/ruslantos/go-shortener-service/internal/files"
 )
 
-type linksStorage interface {
-	AddLink(raw string) string
-	GetLink(value string) (key string, ok bool)
-}
-
-type file interface {
-	WriteEvent(event *fileJob.Event) error
+type linksService interface {
+	Add(long string) (string, error)
 }
 
 type Handler struct {
-	linksStorage linksStorage
-	file         file
+	linksService linksService
 }
 
-func New(linksStorage linksStorage, file file) *Handler {
-	return &Handler{linksStorage: linksStorage, file: file}
+func New(linksService linksService) *Handler {
+	return &Handler{linksService: linksService}
 }
 
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
@@ -35,17 +27,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	short := h.linksStorage.AddLink(string(body))
-
-	event := &fileJob.Event{
-		ID:          uuid.New().String(),
-		ShortURL:    short,
-		OriginalURL: string(body),
-	}
-	err := h.file.WriteEvent(event)
+	short, err := h.linksService.Add(string(body))
 	if err != nil {
-		http.Error(w, "Write event error", http.StatusInternalServerError)
-
+		http.Error(w, fmt.Sprintf("add short link error: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
 
