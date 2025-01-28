@@ -6,6 +6,10 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"go.uber.org/zap"
+
+	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 )
 
 var (
@@ -53,6 +57,12 @@ func ParseFlags() {
 	if fileStoragePath := os.Getenv("FILE_STORAGE_PATH"); fileStoragePath != "" {
 		FileStoragePath = fileStoragePath
 	}
+	logger.GetLogger().Info("Init service flags",
+		zap.String("FlagServerPort", FlagServerPort),
+		zap.String("FlagShortURL", FlagShortURL),
+		zap.String("FlagLogLevel", FlagLogLevel),
+		zap.String("FileStoragePath", FileStoragePath),
+	)
 }
 
 func (a NetAddress) String() string {
