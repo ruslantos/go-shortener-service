@@ -14,8 +14,7 @@ type testWriter struct {
 	*bytes.Buffer
 }
 
-func (w *testWriter) WriteHeader(_ int) {
-	return
+func (w *testWriter) WriteHeader(b int) {
 }
 
 func (w *testWriter) Header() http.Header {
