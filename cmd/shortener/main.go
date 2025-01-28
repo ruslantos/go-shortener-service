@@ -25,12 +25,12 @@ func main() {
 
 	config.ParseFlags()
 
-	fileProducer, err := fileClient.NewProducer(config.FileStoragePath + "links")
+	fileProducer, err := fileClient.NewProducer(config.FileStoragePath)
 	if err != nil {
 		panic(err)
 	}
 
-	fileConsumer, err := fileClient.NewConsumer(config.FileStoragePath + "links")
+	fileConsumer, err := fileClient.NewConsumer(config.FileStoragePath)
 	if err != nil {
 		panic(err)
 	}
