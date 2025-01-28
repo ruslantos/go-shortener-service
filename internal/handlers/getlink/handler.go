@@ -29,5 +29,5 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Location", long)
 	w.WriteHeader(http.StatusTemporaryRedirect)
-	//w.Write([]byte(""))
+	w.Write([]byte(""))
 }
