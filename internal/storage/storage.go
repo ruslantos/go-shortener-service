@@ -1,8 +1,12 @@
 package storage
 
 import (
+	"fmt"
 	"strconv"
 	"sync"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jmoiron/sqlx"
 
 	fileJob "github.com/ruslantos/go-shortener-service/internal/files"
 	mid "github.com/ruslantos/go-shortener-service/internal/middleware/logger"
@@ -16,13 +20,15 @@ type LinksStorage struct {
 	linksMap map[string]string
 	mutex    *sync.Mutex
 	file     file
+	db       *sqlx.DB
 }
 
-func NewLinksStorage(file file) *LinksStorage {
+func NewLinksStorage(file file, db *sqlx.DB) *LinksStorage {
 	return &LinksStorage{
 		linksMap: make(map[string]string),
 		mutex:    &sync.Mutex{},
 		file:     file,
+		db:       db,
 	}
 }
 
@@ -55,4 +61,16 @@ func (l LinksStorage) InitLinkMap() error {
 	}
 	mid.GetLogger().Info("Links map initialized")
 	return nil
+}
+
+func (l LinksStorage) Ping() error {
+	if l.db == nil {
+		return fmt.Errorf("database connection is nil")
+	}
+	err := l.db.Ping()
+	if err != nil {
+		mid.GetLogger().Error(err.Error())
+	}
+
+	return err
 }
