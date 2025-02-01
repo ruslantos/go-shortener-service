@@ -6,11 +6,13 @@ import (
 	"github.com/google/uuid"
 
 	fileJob "github.com/ruslantos/go-shortener-service/internal/files"
+	mid "github.com/ruslantos/go-shortener-service/internal/middleware/logger"
+	"github.com/ruslantos/go-shortener-service/internal/models"
 )
 
 type linksStorage interface {
-	AddLink(raw string) string
-	GetLink(value string) (key string, ok bool)
+	AddLink(raw models.Links) error
+	GetLink(value string) (string, bool, error)
 	Ping() error
 }
 
@@ -31,7 +33,10 @@ func NewLinkService(linksStorage linksStorage, fileProducer fileProducer) *Link 
 }
 
 func (l *Link) Get(shortLink string) (string, error) {
-	v, ok := l.linksStorage.GetLink(shortLink)
+	v, ok, err := l.linksStorage.GetLink(shortLink)
+	if err != nil {
+		return "", err
+	}
 	if !ok {
 		return v, errors.New("link not found")
 	}
@@ -39,16 +44,14 @@ func (l *Link) Get(shortLink string) (string, error) {
 }
 
 func (l *Link) Add(long string) (string, error) {
-	short := l.linksStorage.AddLink(long)
-
-	event := &fileJob.Event{
-		ID:          uuid.New().String(),
+	short := uuid.New().String()
+	err := l.linksStorage.AddLink(models.Links{
 		ShortURL:    short,
 		OriginalURL: long,
-	}
-	err := l.fileProducer.WriteEvent(event)
+	})
 	if err != nil {
-		return short, errors.New("write event error")
+		mid.GetLogger().Error(err.Error())
+		return short, errors.New("error adding link")
 	}
 	return short, nil
 }
