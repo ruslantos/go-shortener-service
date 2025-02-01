@@ -6,9 +6,14 @@ packages:
     config:
       dir: internal/handlers/getlink
     interfaces:
-      linksStorage:
+      linksService:
   github.com/ruslantos/go-shortener-service/internal/handlers/postlink:
     config:
       dir: internal/handlers/postlink
     interfaces:
-      linksStorage:
+      linksService:
+  github.com/ruslantos/go-shortener-service/internal/handlers/shorten:
+    config:
+      dir: internal/handlers/shorten
+    interfaces:
+      linksService:

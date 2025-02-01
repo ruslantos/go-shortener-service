@@ -3,15 +3,20 @@ package config
 import (
 	"errors"
 	"flag"
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
+
+	"go.uber.org/zap"
+
+	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 )
 
 var (
-	FlagServerPort string
-	FlagShortURL   = "http://localhost:8080/"
+	FlagServerPort  string
+	FlagShortURL    = "http://localhost:8080/"
+	FlagLogLevel    = ""
+	FileStoragePath = ""
 )
 
 type NetAddress struct {
@@ -21,6 +26,8 @@ type NetAddress struct {
 
 func ParseFlags() {
 	flag.StringVar(&FlagServerPort, "a", ":8080", "address and port to run server")
+	flag.StringVar(&FlagLogLevel, "l", "info", "log level")
+	flag.StringVar(&FileStoragePath, "f", "./tmp/links", "files storage path")
 
 	addr := new(NetAddress)
 	_ = flag.Value(addr)
@@ -42,8 +49,20 @@ func ParseFlags() {
 	default:
 		FlagShortURL = "http://localhost:8080/"
 	}
-	fmt.Printf("Server address: %s\n", FlagServerPort)
-	fmt.Printf("BaseURL: %s\n", FlagShortURL)
+
+	if envLogLevel := os.Getenv("LOG_LEVEL"); envLogLevel != "" {
+		FlagLogLevel = envLogLevel
+	}
+
+	if fileStoragePath := os.Getenv("FILE_STORAGE_PATH"); fileStoragePath != "" {
+		FileStoragePath = fileStoragePath
+	}
+	logger.GetLogger().Info("Init links config",
+		zap.String("SERVER_PORT", FlagServerPort),
+		zap.String("SHORT_URL", FlagShortURL),
+		zap.String("LOG_LEVEL", FlagLogLevel),
+		zap.String("STORAGE_PATH", FileStoragePath),
+	)
 }
 
 func (a NetAddress) String() string {

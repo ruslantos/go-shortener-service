@@ -3,17 +3,26 @@ package storage
 import (
 	"strconv"
 	"sync"
+
+	fileJob "github.com/ruslantos/go-shortener-service/internal/files"
+	mid "github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 )
+
+type file interface {
+	ReadEvents() ([]*fileJob.Event, error)
+}
 
 type LinksStorage struct {
 	linksMap map[string]string
 	mutex    *sync.Mutex
+	file     file
 }
 
-func NewLinksStorage() *LinksStorage {
+func NewLinksStorage(file file) *LinksStorage {
 	return &LinksStorage{
 		linksMap: make(map[string]string),
 		mutex:    &sync.Mutex{},
+		file:     file,
 	}
 }
 
@@ -34,4 +43,16 @@ func (l LinksStorage) getShortValue(raw string) string {
 	l.mutex.Unlock()
 
 	return short
+}
+
+func (l LinksStorage) InitLinkMap() error {
+	rows, err := l.file.ReadEvents()
+	if err != nil {
+		return err
+	}
+	for _, row := range rows {
+		l.linksMap[row.ShortURL] = row.OriginalURL
+	}
+	mid.GetLogger().Info("Links map initialized")
+	return nil
 }

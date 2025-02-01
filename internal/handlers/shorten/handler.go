@@ -1,7 +1,7 @@
-package postlink
+package shorten
 
 import (
-	"fmt"
+	"encoding/json"
 	"io"
 	"net/http"
 
@@ -21,19 +21,33 @@ func New(linksService linksService) *Handler {
 }
 
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
-	body, _ := io.ReadAll(r.Body)
-	if len(body) == 0 {
+	bodyRaw, _ := io.ReadAll(r.Body)
+	if len(bodyRaw) == 0 {
 		http.Error(w, "Error reading body", http.StatusBadRequest)
 		return
 	}
 
-	short, err := h.linksService.Add(string(body))
+	var body ShortenRequest
+	err := json.Unmarshal(bodyRaw, &body)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("add short link error: %s", err.Error()), http.StatusInternalServerError)
+		http.Error(w, "Unmarshalling error", http.StatusBadRequest)
+		return
+	}
+
+	short, err := h.linksService.Add(body.URL)
+	if err != nil {
+		http.Error(w, "Write event error", http.StatusInternalServerError)
+		return
+	}
+
+	resp := ShortenResponse{Result: config.FlagShortURL + short}
+	result, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, "Marshalling error", http.StatusBadRequest)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(config.FlagShortURL + short))
+	w.Write(result)
 }
