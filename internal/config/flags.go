@@ -61,7 +61,7 @@ func ParseFlags() {
 	}
 
 	if databaseDsn := os.Getenv("DATABASE_DSN"); databaseDsn != "" {
-		FileStoragePath = databaseDsn
+		DatabaseDsn = databaseDsn
 	}
 	logger.GetLogger().Info("Init service config",
 		zap.String("SERVER_PORT", FlagServerPort),

@@ -50,6 +50,7 @@ func main() {
 	linkRepo := storage.NewLinksStorage(fileConsumer, db)
 	err = linkRepo.InitLinkMap()
 	if err != nil {
+		panic(err)
 	}
 	err = linkRepo.InitDB()
 	if err != nil {
