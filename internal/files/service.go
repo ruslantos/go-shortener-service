@@ -50,15 +50,6 @@ func NewConsumer(filename string) (*Consumer, error) {
 	}, nil
 }
 
-func (c *Consumer) ReadEvent() (*Event, error) {
-	event := Event{}
-	if err := c.decoder.Decode(&event); err != nil {
-		return nil, err
-	}
-
-	return &event, nil
-}
-
 func (c *Consumer) ReadEvents() ([]*Event, error) {
 	var events []*Event
 
