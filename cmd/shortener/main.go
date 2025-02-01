@@ -42,12 +42,15 @@ func main() {
 		panic(err)
 	}
 
-	//fileConsumer, err := fileClient.NewConsumer(config.FileStoragePath)
-	//if err != nil {
-	//	panic(err)
-	//}
+	fileConsumer, err := fileClient.NewConsumer(config.FileStoragePath)
+	if err != nil {
+		panic(err)
+	}
 
-	linkRepo := storage.NewLinksStorage(db)
+	linkRepo := storage.NewLinksStorage(fileConsumer, db)
+	err = linkRepo.InitLinkMap()
+	if err != nil {
+	}
 	err = linkRepo.InitDB()
 	if err != nil {
 		panic(err)
