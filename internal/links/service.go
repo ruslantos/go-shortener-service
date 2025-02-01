@@ -11,6 +11,7 @@ import (
 type linksStorage interface {
 	AddLink(raw string) string
 	GetLink(value string) (key string, ok bool)
+	Ping() error
 }
 
 type fileProducer interface {
@@ -50,4 +51,12 @@ func (l *Link) Add(long string) (string, error) {
 		return short, errors.New("write event error")
 	}
 	return short, nil
+}
+
+func (l *Link) Ping() error {
+	err := l.linksStorage.Ping()
+	if err != nil {
+		return err
+	}
+	return nil
 }
