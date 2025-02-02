@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/ruslantos/go-shortener-service/internal/config"
 	"github.com/ruslantos/go-shortener-service/internal/models"
 )
 
@@ -63,7 +64,7 @@ func prepareRequest(body ShortenBatchRequest) []models.Links {
 func prepareResponse(links []models.Links) ShortenBatchResponse {
 	resp := ShortenBatchResponse{}
 	for _, link := range links {
-		resp = append(resp, BatchShortURLs{CorrelationID: link.CorrelationID, ShortURL: link.ShortURL})
+		resp = append(resp, BatchShortURLs{CorrelationID: link.CorrelationID, ShortURL: config.FlagShortURL + link.ShortURL})
 	}
 	return resp
 }
