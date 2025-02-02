@@ -1,4 +1,4 @@
-package shorten_batch
+package shortenbatch
 
 import (
 	"encoding/json"

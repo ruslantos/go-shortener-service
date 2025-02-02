@@ -1,4 +1,4 @@
-package shorten_batch
+package shortenbatch
 
 type ShortenBatchRequest []BatchOriginalURLs
 type ShortenBatchResponse []BatchShortURLs

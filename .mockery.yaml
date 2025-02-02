@@ -19,6 +19,6 @@ packages:
       linksService:
   github.com/ruslantos/go-shortener-service/internal/handlers/shorten_batch:
     config:
-      dir: internal/handlers/shorten_batch
+      dir: internal/handlers/shortenbatch
     interfaces:
       linksService:
