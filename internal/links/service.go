@@ -1,19 +1,23 @@
 package links
 
 import (
+	"context"
 	"errors"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 
+	"github.com/ruslantos/go-shortener-service/internal/config"
 	fileJob "github.com/ruslantos/go-shortener-service/internal/files"
-	mid "github.com/ruslantos/go-shortener-service/internal/middleware/logger"
+	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/models"
 )
 
 type linksStorage interface {
-	AddLink(link models.Links) (string, error)
+	AddLink(link models.Links) error
 	GetLink(value string) (string, bool, error)
 	Ping() error
+	AddLinkBatch(ctx context.Context, links []models.Links) error
 }
 
 type fileProducer interface {
@@ -44,27 +48,56 @@ func (l *Link) Get(shortLink string) (string, error) {
 }
 
 func (l *Link) Add(long string) (string, error) {
-	short := uuid.New().String()
-	short, err := l.linksStorage.AddLink(models.Links{
-		ShortURL:    short,
+	link := models.Links{
+		ShortURL:    uuid.New().String(),
 		OriginalURL: long,
-	})
+	}
+	err := l.linksStorage.AddLink(link)
 	if err != nil {
-		mid.GetLogger().Error(err.Error())
-		return short, errors.New("error adding link")
+		logger.GetLogger().Error(err.Error())
+		return link.ShortURL, errors.New("error adding link")
 	}
 
 	event := &fileJob.Event{
 		ID:          uuid.New().String(),
-		ShortURL:    short,
+		ShortURL:    link.ShortURL,
 		OriginalURL: long,
 	}
 	err = l.fileProducer.WriteEvent(event)
 	if err != nil {
-		return short, errors.New("write event error")
+		return link.ShortURL, errors.New("write event error")
 	}
 
-	return short, nil
+	return link.ShortURL, nil
+}
+
+func (l *Link) AddBatch(links []models.Links) ([]models.Links, error) {
+	for i := range links {
+		links[i].ShortURL = uuid.New().String()
+	}
+
+	err := l.linksStorage.AddLinkBatch(context.Background(), links)
+	if err != nil {
+		logger.GetLogger().Error("add link batch error", zap.Error(err))
+		return links, err
+	}
+
+	//запись в файл
+	if !config.IsDatabaseExist {
+		for _, link := range links {
+			event := &fileJob.Event{
+				ID:          link.CorrelationID,
+				ShortURL:    link.ShortURL,
+				OriginalURL: link.OriginalURL,
+			}
+			err = l.fileProducer.WriteEvent(event)
+			if err != nil {
+				return nil, errors.New("write events error")
+			}
+		}
+	}
+
+	return links, nil
 }
 
 func (l *Link) Ping() error {

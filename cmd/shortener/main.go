@@ -14,6 +14,7 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/handlers/ping"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/postlink"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/shorten"
+	"github.com/ruslantos/go-shortener-service/internal/handlers/shorten_batch"
 	"github.com/ruslantos/go-shortener-service/internal/links"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/compress"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
@@ -68,6 +69,7 @@ func main() {
 	getLinkHandler := getlink.New(linkService)
 	shortenHandler := shorten.New(linkService)
 	pingHandler := ping.New(linkService)
+	shortenBatchHandler := shorten_batch.New(linkService)
 
 	r := chi.NewRouter()
 	r.Use(compress.GzipMiddlewareWriter, compress.GzipMiddlewareReader, logger.LoggerChi(log))
@@ -75,6 +77,7 @@ func main() {
 	r.Get("/{link}", getLinkHandler.Handle)
 	r.Post("/api/shorten", shortenHandler.Handle)
 	r.Get("/ping", pingHandler.Handle)
+	r.Post("/api/shorten/batch", shortenBatchHandler.Handle)
 
 	err = http.ListenAndServe(config.FlagServerPort, r)
 	if err != nil {

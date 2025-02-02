@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strconv"
 	"sync"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -22,7 +21,7 @@ type file interface {
 }
 
 type LinksStorage struct {
-	linksMap map[string]string
+	linksMap map[string]models.Links
 	mutex    *sync.Mutex
 	file     file
 	db       *sqlx.DB
@@ -30,30 +29,62 @@ type LinksStorage struct {
 
 func NewLinksStorage(file file, db *sqlx.DB) *LinksStorage {
 	return &LinksStorage{
-		linksMap: make(map[string]string),
+		linksMap: make(map[string]models.Links),
 		mutex:    &sync.Mutex{},
 		file:     file,
 		db:       db,
 	}
 }
 
-func (l LinksStorage) AddLink(link models.Links) (string, error) {
+func (l LinksStorage) AddLink(link models.Links) error {
 	if !config.IsDatabaseExist {
-		return l.getShortValue(link.OriginalURL), nil
+		l.addLinksToMap([]models.Links{link})
+		return nil
 	}
 
 	_, err := l.db.ExecContext(context.Background(),
 		"INSERT INTO links  (short_url, original_url) VALUES ($1, $2)", link.ShortURL, link.OriginalURL)
 	if err != nil {
-		return "", err
+		return err
 	}
-	return link.ShortURL, nil
+	return nil
+}
+
+func (l LinksStorage) AddLinkBatch(ctx context.Context, links []models.Links) error {
+	if !config.IsDatabaseExist {
+		l.addLinksToMap(links)
+		return nil
+	}
+
+	tx, err := l.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	stmt, err := tx.PrepareContext(ctx,
+		"INSERT INTO links (correlation_id, short_url, original_url)VALUES($1,$2,$3)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, v := range links {
+		_, err = stmt.ExecContext(ctx, v.CorrelationID, v.ShortURL, v.OriginalURL)
+		if err != nil {
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (l LinksStorage) GetLink(value string) (string, bool, error) {
 	if !config.IsDatabaseExist {
 		result, ok := l.linksMap[value]
-		return result, ok, nil
+		return result.OriginalURL, ok, nil
 	}
 
 	row := l.db.QueryRowContext(context.Background(),
@@ -69,14 +100,13 @@ func (l LinksStorage) GetLink(value string) (string, bool, error) {
 	return long, true, nil
 }
 
-func (l LinksStorage) getShortValue(raw string) string {
+func (l LinksStorage) addLinksToMap(links []models.Links) {
 	l.mutex.Lock()
-	count := len(l.linksMap)
-	short := strconv.Itoa(count + 1)
-	l.linksMap[short] = raw
-	l.mutex.Unlock()
+	defer l.mutex.Unlock()
 
-	return short
+	for _, v := range links {
+		l.linksMap[v.ShortURL] = v
+	}
 }
 
 func (l LinksStorage) InitLinkMap() error {
@@ -85,7 +115,7 @@ func (l LinksStorage) InitLinkMap() error {
 		return err
 	}
 	for _, row := range rows {
-		l.linksMap[row.ShortURL] = row.OriginalURL
+		l.linksMap[row.ShortURL] = models.Links{ShortURL: row.OriginalURL, OriginalURL: row.OriginalURL, CorrelationID: row.ID}
 	}
 	logger.GetLogger().Info("Links map initialized")
 	return nil
@@ -105,20 +135,20 @@ func (l LinksStorage) Ping() error {
 
 func (l LinksStorage) InitDB() error {
 	_, err := l.db.ExecContext(context.Background(),
-		`CREATE TABLE IF NOT EXISTS links(short_url TEXT,original_url TEXT);`)
+		`CREATE TABLE IF NOT EXISTS links(short_url TEXT,original_url TEXT, correlation_id TEXT);`)
 	if err != nil {
 		logger.GetLogger().Error(err.Error())
 		return err
 	}
 
 	// убрать после отказа от файла и мапы
-	for k, v := range l.linksMap {
-		_, err := l.db.ExecContext(context.Background(),
-			"INSERT INTO links  (short_url, original_url) VALUES ($1, $2)", k, v)
-		if err != nil {
-			logger.GetLogger().Error(err.Error())
-			return err
-		}
-	}
+	//for k, v := range l.linksMap {
+	//	_, err := l.db.ExecContext(context.Background(),
+	//		"INSERT INTO links  (short_url, original_url) VALUES ($1, $2)", k, v)
+	//	if err != nil {
+	//		logger.GetLogger().Error(err.Error())
+	//		return err
+	//	}
+	//}
 	return nil
 }
