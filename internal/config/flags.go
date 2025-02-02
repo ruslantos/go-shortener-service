@@ -17,7 +17,8 @@ var (
 	FlagShortURL    = "http://localhost:8080/"
 	FlagLogLevel    = ""
 	FileStoragePath = ""
-	DatabaseDsn     = ""
+	DatabaseDsn     = "user=videos password=password dbname=shortenerdatabase sslmode=disable"
+	IsDatabaseExist = true
 )
 
 type NetAddress struct {
@@ -29,7 +30,7 @@ func ParseFlags() {
 	flag.StringVar(&FlagServerPort, "a", ":8080", "address and port to run server")
 	flag.StringVar(&FlagLogLevel, "l", "info", "log level")
 	flag.StringVar(&FileStoragePath, "f", "./tmp/links", "files storage path")
-	flag.StringVar(&DatabaseDsn, "d", "user=videos password=password dbname=shortenerdatabase sslmode=disable", "database dsn")
+	flag.StringVar(&DatabaseDsn, "d", "", "database dsn")
 
 	addr := new(NetAddress)
 	_ = flag.Value(addr)
@@ -62,7 +63,10 @@ func ParseFlags() {
 
 	if databaseDsn := os.Getenv("DATABASE_DSN"); databaseDsn != "" {
 		DatabaseDsn = databaseDsn
+	} else {
+		IsDatabaseExist = false
 	}
+
 	logger.GetLogger().Info("Init service config",
 		zap.String("SERVER_PORT", FlagServerPort),
 		zap.String("SHORT_URL", FlagShortURL),

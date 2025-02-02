@@ -5,11 +5,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
 	"sync"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 
+	"github.com/ruslantos/go-shortener-service/internal/config"
 	fileJob "github.com/ruslantos/go-shortener-service/internal/files"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/models"
@@ -35,16 +37,25 @@ func NewLinksStorage(file file, db *sqlx.DB) *LinksStorage {
 	}
 }
 
-func (l LinksStorage) AddLink(raw models.Links) error {
-	_, err := l.db.ExecContext(context.Background(),
-		"INSERT INTO links  (short_url, original_url) VALUES ($1, $2)", raw.ShortURL, raw.OriginalURL)
-	if err != nil {
-		return err
+func (l LinksStorage) AddLink(link models.Links) (string, error) {
+	if !config.IsDatabaseExist {
+		return l.getShortValue(link.OriginalURL), nil
 	}
-	return nil
+
+	_, err := l.db.ExecContext(context.Background(),
+		"INSERT INTO links  (short_url, original_url) VALUES ($1, $2)", link.ShortURL, link.OriginalURL)
+	if err != nil {
+		return "", err
+	}
+	return link.ShortURL, nil
 }
 
 func (l LinksStorage) GetLink(value string) (string, bool, error) {
+	if config.IsDatabaseExist {
+		result, ok := l.linksMap[value]
+		return result, ok, nil
+	}
+
 	row := l.db.QueryRowContext(context.Background(),
 		"SELECT original_url FROM links where short_url = $1 LIMIT 1", value)
 	var long string
@@ -56,6 +67,16 @@ func (l LinksStorage) GetLink(value string) (string, bool, error) {
 		return "", false, err
 	}
 	return long, true, nil
+}
+
+func (l LinksStorage) getShortValue(raw string) string {
+	l.mutex.Lock()
+	count := len(l.linksMap)
+	short := strconv.Itoa(count + 1)
+	l.linksMap[short] = raw
+	l.mutex.Unlock()
+
+	return short
 }
 
 func (l LinksStorage) InitLinkMap() error {

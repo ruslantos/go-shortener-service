@@ -11,7 +11,7 @@ import (
 )
 
 type linksStorage interface {
-	AddLink(raw models.Links) error
+	AddLink(link models.Links) (string, error)
 	GetLink(value string) (string, bool, error)
 	Ping() error
 }
@@ -45,7 +45,7 @@ func (l *Link) Get(shortLink string) (string, error) {
 
 func (l *Link) Add(long string) (string, error) {
 	short := uuid.New().String()
-	err := l.linksStorage.AddLink(models.Links{
+	short, err := l.linksStorage.AddLink(models.Links{
 		ShortURL:    short,
 		OriginalURL: long,
 	})

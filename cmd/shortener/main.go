@@ -48,13 +48,17 @@ func main() {
 	}
 
 	linkRepo := storage.NewLinksStorage(fileConsumer, db)
-	err = linkRepo.InitLinkMap()
-	if err != nil {
-		panic(err)
-	}
-	err = linkRepo.InitDB()
-	if err != nil {
-		panic(err)
+
+	if config.IsDatabaseExist {
+		err = linkRepo.InitDB()
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		err = linkRepo.InitLinkMap()
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	linkService := links.NewLinkService(linkRepo, fileProducer)
