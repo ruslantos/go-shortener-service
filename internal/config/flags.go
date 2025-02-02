@@ -61,9 +61,14 @@ func ParseFlags() {
 		FileStoragePath = fileStoragePath
 	}
 
-	if databaseDsn := os.Getenv("DATABASE_DSN"); databaseDsn != "" {
-		DatabaseDsn = databaseDsn
-	} else {
+	//os.Setenv("DATABASE_DSN", "user=videos password=password dbname=shortenerdatabase sslmode=disable")
+
+	switch {
+	case DatabaseDsn != "":
+		return
+	case os.Getenv("DATABASE_DSN") != "":
+		DatabaseDsn = os.Getenv("DATABASE_DSN")
+	default:
 		IsDatabaseExist = false
 	}
 
@@ -73,6 +78,7 @@ func ParseFlags() {
 		zap.String("LOG_LEVEL", FlagLogLevel),
 		zap.String("STORAGE_PATH", FileStoragePath),
 		zap.String("DATABASE_DSN", DatabaseDsn),
+		zap.Boolp("IsDatabaseExist", &IsDatabaseExist),
 	)
 }
 
