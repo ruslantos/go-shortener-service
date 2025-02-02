@@ -1,13 +1,12 @@
-package getlink
+package ping
 
 import (
 	"fmt"
 	"net/http"
-	"strings"
 )
 
 type linksService interface {
-	Get(shortLink string) (string, error)
+	Ping() error
 }
 
 type Handler struct {
@@ -19,15 +18,12 @@ func New(linksService linksService) *Handler {
 }
 
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Path
-
-	long, err := h.linksService.Get(strings.Replace(q, "/", "", 1))
+	err := h.linksService.Ping()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to get long link: %s", err.Error()), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("failed to get long link: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Add("Location", long)
-	w.WriteHeader(http.StatusTemporaryRedirect)
+	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(""))
 }
