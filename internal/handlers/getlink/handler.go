@@ -23,7 +23,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 
 	long, err := h.linksService.Get(strings.Replace(q, "/", "", 1))
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to get long ling: %s", err.Error()), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("failed to get long link: %s", err.Error()), http.StatusBadRequest)
 		return
 	}
 

@@ -51,7 +51,7 @@ func (l LinksStorage) AddLink(link models.Links) (string, error) {
 }
 
 func (l LinksStorage) GetLink(value string) (string, bool, error) {
-	if config.IsDatabaseExist {
+	if !config.IsDatabaseExist {
 		result, ok := l.linksMap[value]
 		return result, ok, nil
 	}
