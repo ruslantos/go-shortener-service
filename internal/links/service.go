@@ -53,6 +53,17 @@ func (l *Link) Add(long string) (string, error) {
 		mid.GetLogger().Error(err.Error())
 		return short, errors.New("error adding link")
 	}
+
+	event := &fileJob.Event{
+		ID:          uuid.New().String(),
+		ShortURL:    short,
+		OriginalURL: long,
+	}
+	err = l.fileProducer.WriteEvent(event)
+	if err != nil {
+		return short, errors.New("write event error")
+	}
+
 	return short, nil
 }
 
