@@ -29,14 +29,14 @@ func main() {
 
 	config.ParseFlags()
 
-	var db *sqlx.DB
-	if config.IsDatabaseExist {
-		db, err := sqlx.Open("pgx", config.DatabaseDsn)
-		if err != nil {
-			panic(err)
-		}
-		defer db.Close()
+	//var db *sqlx.DB
+	//if config.IsDatabaseExist {
+	db, err := sqlx.Open("pgx", config.DatabaseDsn)
+	if err != nil {
+		panic(err)
 	}
+	defer db.Close()
+	//}
 
 	fileProducer, err := fileClient.NewProducer(config.FileStoragePath)
 	if err != nil {
