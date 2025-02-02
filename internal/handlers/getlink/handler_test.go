@@ -32,5 +32,5 @@ func TestHandler_Handle_BadRequest(t *testing.T) {
 
 	h.Handle(rr, req)
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
-	assert.Equal(t, "failed to get long ling: some error\n", rr.Body.String())
+	assert.Equal(t, "failed to get long link: some error\n", rr.Body.String())
 }
