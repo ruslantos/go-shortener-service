@@ -37,7 +37,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	links, err := h.linksService.AddBatch(prepareRequest(body))
-	respStatus := http.StatusOK
+	respStatus := http.StatusCreated
 	if err != nil {
 		if internal_errors.IsClientError(err) {
 			respStatus = http.StatusConflict
