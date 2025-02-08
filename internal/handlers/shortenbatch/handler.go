@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/ruslantos/go-shortener-service/internal/config"
+	internal_errors "github.com/ruslantos/go-shortener-service/internal/errors"
 	"github.com/ruslantos/go-shortener-service/internal/models"
 )
 
@@ -36,9 +37,14 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	links, err := h.linksService.AddBatch(prepareRequest(body))
+	respStatus := http.StatusOK
 	if err != nil {
-		http.Error(w, "add batch shorten error", http.StatusInternalServerError)
-		return
+		if internal_errors.IsClientError(err) {
+			respStatus = http.StatusConflict
+		} else {
+			http.Error(w, "add batch shorten error", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	resp := prepareResponse(links)
@@ -49,7 +55,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(respStatus)
 	w.Write(result)
 }
 

@@ -17,7 +17,7 @@ type linksStorage interface {
 	AddLink(link models.Links) error
 	GetLink(value string) (string, bool, error)
 	Ping() error
-	AddLinkBatch(ctx context.Context, links []models.Links) error
+	AddLinkBatch(ctx context.Context, links []models.Links) ([]models.Links, error)
 }
 
 type fileProducer interface {
@@ -76,15 +76,15 @@ func (l *Link) AddBatch(links []models.Links) ([]models.Links, error) {
 		links[i].ShortURL = uuid.New().String()
 	}
 
-	err := l.linksStorage.AddLinkBatch(context.Background(), links)
+	linksSaved, err := l.linksStorage.AddLinkBatch(context.Background(), links)
 	if err != nil {
 		logger.GetLogger().Error("add link batch error", zap.Error(err))
-		return links, err
+		return linksSaved, err
 	}
 
 	//запись в файл
 	if !config.IsDatabaseExist {
-		for _, link := range links {
+		for _, link := range linksSaved {
 			event := &fileJob.Event{
 				ID:          link.CorrelationID,
 				ShortURL:    link.ShortURL,
@@ -97,7 +97,7 @@ func (l *Link) AddBatch(links []models.Links) ([]models.Links, error) {
 		}
 	}
 
-	return links, nil
+	return linksSaved, nil
 }
 
 func (l *Link) Ping() error {

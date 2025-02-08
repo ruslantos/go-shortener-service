@@ -11,6 +11,7 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"github.com/ruslantos/go-shortener-service/internal/config"
+	internal_errors "github.com/ruslantos/go-shortener-service/internal/errors"
 	fileJob "github.com/ruslantos/go-shortener-service/internal/files"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/models"
@@ -50,35 +51,56 @@ func (l LinksStorage) AddLink(link models.Links) error {
 	return nil
 }
 
-func (l LinksStorage) AddLinkBatch(ctx context.Context, links []models.Links) error {
+func (l LinksStorage) AddLinkBatch(ctx context.Context, links []models.Links) ([]models.Links, error) {
 	if !config.IsDatabaseExist {
 		l.addLinksToMap(links)
-		return nil
+		return links, nil
 	}
 
 	tx, err := l.db.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	stmt, err := tx.PrepareContext(ctx,
-		"INSERT INTO links (correlation_id, short_url, original_url)VALUES($1,$2,$3)")
+	stmtInsert, err := tx.PrepareContext(ctx,
+		"INSERT INTO links (correlation_id, short_url, original_url)VALUES($1,$2,$3) "+
+			"ON CONFLICT (original_url) DO NOTHING RETURNING short_url")
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer stmt.Close()
+	defer stmtInsert.Close()
 
-	for _, v := range links {
-		_, err = stmt.ExecContext(ctx, v.CorrelationID, v.ShortURL, v.OriginalURL)
-		if err != nil {
-			return err
+	stmtSelect, err := tx.PrepareContext(ctx,
+		"SELECT correlation_id, short_url, original_url FROM links where original_url = $1 LIMIT 1")
+	if err != nil {
+		return nil, err
+	}
+	defer stmtInsert.Close()
+
+	var errorDB error
+	for i := range links {
+		v := &links[i]
+		var originalURL string
+		errDB := stmtInsert.QueryRowContext(ctx, v.CorrelationID, v.ShortURL, v.OriginalURL).Scan(&originalURL)
+		if errDB != nil {
+			if errors.Is(errDB, sql.ErrNoRows) {
+				errorDB = internal_errors.NewClientError(errDB)
+				//если url уже есть в базе, то берем из базы имеющиеся данные
+				err = stmtSelect.QueryRowContext(ctx, v.OriginalURL).Scan(&v.CorrelationID, &v.ShortURL, &v.OriginalURL)
+				if err != nil {
+					return nil, err
+				}
+
+				continue
+			}
+			return nil, errDB
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return links, errorDB
 }
 
 func (l LinksStorage) GetLink(value string) (string, bool, error) {
@@ -135,20 +157,12 @@ func (l LinksStorage) Ping() error {
 
 func (l LinksStorage) InitDB() error {
 	_, err := l.db.ExecContext(context.Background(),
-		`CREATE TABLE IF NOT EXISTS links(short_url TEXT,original_url TEXT, correlation_id TEXT);`)
+		`CREATE TABLE IF NOT EXISTS links(short_url TEXT,original_url TEXT, correlation_id TEXT);
+				CREATE UNIQUE INDEX IF NOT EXISTS idx_original_url ON links(original_url);`)
 	if err != nil {
 		logger.GetLogger().Error(err.Error())
 		return err
 	}
 
-	// убрать после отказа от файла и мапы
-	//for k, v := range l.linksMap {
-	//	_, err := l.db.ExecContext(context.Background(),
-	//		"INSERT INTO links  (short_url, original_url) VALUES ($1, $2)", k, v)
-	//	if err != nil {
-	//		logger.GetLogger().Error(err.Error())
-	//		return err
-	//	}
-	//}
 	return nil
 }
