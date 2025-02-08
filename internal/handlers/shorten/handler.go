@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/ruslantos/go-shortener-service/internal/config"
+	internal_errors "github.com/ruslantos/go-shortener-service/internal/errors"
 )
 
 type linksService interface {
@@ -34,10 +35,15 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	respStatus := http.StatusCreated
 	short, err := h.linksService.Add(body.URL)
 	if err != nil {
-		http.Error(w, "Write event error", http.StatusInternalServerError)
-		return
+		if internal_errors.IsClientError(err) {
+			respStatus = http.StatusConflict
+		} else {
+			http.Error(w, "Write event error", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	resp := ShortenResponse{Result: config.FlagShortURL + short}
@@ -48,6 +54,6 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(respStatus)
 	w.Write(result)
 }

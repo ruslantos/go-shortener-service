@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 
@@ -37,18 +39,33 @@ func NewLinksStorage(file file, db *sqlx.DB) *LinksStorage {
 	}
 }
 
-func (l LinksStorage) AddLink(link models.Links) error {
+func (l LinksStorage) AddLink(link models.Links) (models.Links, error) {
 	if !config.IsDatabaseExist {
 		l.addLinksToMap([]models.Links{link})
-		return nil
+		return link, nil
 	}
 
-	_, err := l.db.ExecContext(context.Background(),
+	_, err := l.db.QueryContext(context.Background(),
 		"INSERT INTO links  (short_url, original_url) VALUES ($1, $2)", link.ShortURL, link.OriginalURL)
 	if err != nil {
-		return err
+		if pgErr, ok := err.(*pgconn.PgError); ok {
+			if pgErr.Code == pgerrcode.UniqueViolation {
+				//если url уже есть в базе, то берем из базы имеющиеся данные
+				result := l.db.QueryRowContext(context.Background(),
+					"SELECT short_url, original_url FROM links where original_url= $1", link.OriginalURL)
+				if result.Err() != nil {
+					return link, err
+				}
+				err = result.Scan(&link.ShortURL, &link.OriginalURL)
+				if err != nil {
+					return link, err
+				}
+				return link, internal_errors.NewClientError(err)
+			}
+		}
 	}
-	return nil
+
+	return link, nil
 }
 
 func (l LinksStorage) AddLinkBatch(ctx context.Context, links []models.Links) ([]models.Links, error) {

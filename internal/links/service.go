@@ -14,7 +14,7 @@ import (
 )
 
 type linksStorage interface {
-	AddLink(link models.Links) error
+	AddLink(link models.Links) (models.Links, error)
 	GetLink(value string) (string, bool, error)
 	Ping() error
 	AddLinkBatch(ctx context.Context, links []models.Links) ([]models.Links, error)
@@ -52,20 +52,18 @@ func (l *Link) Add(long string) (string, error) {
 		ShortURL:    uuid.New().String(),
 		OriginalURL: long,
 	}
-	err := l.linksStorage.AddLink(link)
+
+	savedLink, err := l.linksStorage.AddLink(link)
 	if err != nil {
-		logger.GetLogger().Error(err.Error())
-		return link.ShortURL, errors.New("error adding link")
+		return savedLink.ShortURL, err
 	}
 
-	event := &fileJob.Event{
-		ID:          uuid.New().String(),
-		ShortURL:    link.ShortURL,
-		OriginalURL: long,
-	}
-	err = l.fileProducer.WriteEvent(event)
-	if err != nil {
-		return link.ShortURL, errors.New("write event error")
+	//запись в файл
+	if !config.IsDatabaseExist {
+		err = l.writeFile(link)
+		if err != nil {
+			return link.ShortURL, err
+		}
 	}
 
 	return link.ShortURL, nil
@@ -85,14 +83,9 @@ func (l *Link) AddBatch(links []models.Links) ([]models.Links, error) {
 	//запись в файл
 	if !config.IsDatabaseExist {
 		for _, link := range linksSaved {
-			event := &fileJob.Event{
-				ID:          link.CorrelationID,
-				ShortURL:    link.ShortURL,
-				OriginalURL: link.OriginalURL,
-			}
-			err = l.fileProducer.WriteEvent(event)
+			err = l.writeFile(link)
 			if err != nil {
-				return nil, errors.New("write events error")
+				return linksSaved, err
 			}
 		}
 	}
@@ -104,6 +97,19 @@ func (l *Link) Ping() error {
 	err := l.linksStorage.Ping()
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (l *Link) writeFile(link models.Links) error {
+	event := &fileJob.Event{
+		ID:          link.CorrelationID,
+		ShortURL:    link.ShortURL,
+		OriginalURL: link.OriginalURL,
+	}
+	err := l.fileProducer.WriteEvent(event)
+	if err != nil {
+		return errors.New("write events error")
 	}
 	return nil
 }
