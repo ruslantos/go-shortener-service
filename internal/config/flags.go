@@ -61,7 +61,7 @@ func ParseFlags() {
 		FileStoragePath = fileStoragePath
 	}
 
-	os.Setenv("DATABASE_DSN", "user=videos password=password dbname=shortenerdatabase sslmode=disable")
+	//os.Setenv("DATABASE_DSN", "user=videos password=password dbname=shortenerdatabase sslmode=disable")
 
 	switch {
 	case DatabaseDsn != "":

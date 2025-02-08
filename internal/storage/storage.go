@@ -45,9 +45,9 @@ func (l LinksStorage) AddLink(link models.Links) (models.Links, error) {
 		return link, nil
 	}
 
-	_, err := l.db.QueryContext(context.Background(),
+	rows, err := l.db.QueryContext(context.Background(),
 		"INSERT INTO links  (short_url, original_url) VALUES ($1, $2)", link.ShortURL, link.OriginalURL)
-	if err != nil {
+	if err != nil || rows.Err() != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok {
 			if pgErr.Code == pgerrcode.UniqueViolation {
 				//если url уже есть в базе, то берем из базы имеющиеся данные
