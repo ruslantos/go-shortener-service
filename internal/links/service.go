@@ -100,16 +100,17 @@ func (l *LinkService) AddBatch(links []models.Link) ([]models.Link, error) {
 		links[i].ShortURL = uuid.New().String()
 	}
 	var linksSaved []models.Link
+	var err error
 
 	switch {
 	case config.IsDatabaseExist:
-		linksSaved, err := l.linksDBStorage.AddLinkBatch(context.Background(), links)
+		linksSaved, err = l.linksDBStorage.AddLinkBatch(context.Background(), links)
 		if err != nil {
 			logger.GetLogger().Error("add link batch error", zap.Error(err))
 			return linksSaved, err
 		}
 	default:
-		linksSaved, err := l.linksMapStorage.AddLinkBatch(context.Background(), links)
+		linksSaved, err = l.linksMapStorage.AddLinkBatch(context.Background(), links)
 		if err != nil {
 			logger.GetLogger().Error("add link batch error", zap.Error(err))
 			return linksSaved, err
