@@ -21,27 +21,27 @@ func (_m *MocklinksService) EXPECT() *MocklinksService_Expecter {
 }
 
 // AddBatch provides a mock function with given fields: links
-func (_m *MocklinksService) AddBatch(links []models.Links) ([]models.Links, error) {
+func (_m *MocklinksService) AddBatch(links []models.Link) ([]models.Link, error) {
 	ret := _m.Called(links)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AddBatch")
 	}
 
-	var r0 []models.Links
+	var r0 []models.Link
 	var r1 error
-	if rf, ok := ret.Get(0).(func([]models.Links) ([]models.Links, error)); ok {
+	if rf, ok := ret.Get(0).(func([]models.Link) ([]models.Link, error)); ok {
 		return rf(links)
 	}
-	if rf, ok := ret.Get(0).(func([]models.Links) []models.Links); ok {
+	if rf, ok := ret.Get(0).(func([]models.Link) []models.Link); ok {
 		r0 = rf(links)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]models.Links)
+			r0 = ret.Get(0).([]models.Link)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func([]models.Links) error); ok {
+	if rf, ok := ret.Get(1).(func([]models.Link) error); ok {
 		r1 = rf(links)
 	} else {
 		r1 = ret.Error(1)
@@ -56,24 +56,24 @@ type MocklinksService_AddBatch_Call struct {
 }
 
 // AddBatch is a helper method to define mock.On call
-//   - links []models.Links
+//   - links []models.Link
 func (_e *MocklinksService_Expecter) AddBatch(links interface{}) *MocklinksService_AddBatch_Call {
 	return &MocklinksService_AddBatch_Call{Call: _e.mock.On("AddBatch", links)}
 }
 
-func (_c *MocklinksService_AddBatch_Call) Run(run func(links []models.Links)) *MocklinksService_AddBatch_Call {
+func (_c *MocklinksService_AddBatch_Call) Run(run func(links []models.Link)) *MocklinksService_AddBatch_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].([]models.Links))
+		run(args[0].([]models.Link))
 	})
 	return _c
 }
 
-func (_c *MocklinksService_AddBatch_Call) Return(_a0 []models.Links, _a1 error) *MocklinksService_AddBatch_Call {
+func (_c *MocklinksService_AddBatch_Call) Return(_a0 []models.Link, _a1 error) *MocklinksService_AddBatch_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MocklinksService_AddBatch_Call) RunAndReturn(run func([]models.Links) ([]models.Links, error)) *MocklinksService_AddBatch_Call {
+func (_c *MocklinksService_AddBatch_Call) RunAndReturn(run func([]models.Link) ([]models.Link, error)) *MocklinksService_AddBatch_Call {
 	_c.Call.Return(run)
 	return _c
 }

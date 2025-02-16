@@ -19,6 +19,7 @@ var (
 	FileStoragePath = ""
 	DatabaseDsn     = "user=videos password=password dbname=shortenerdatabase sslmode=disable"
 	IsDatabaseExist = true
+	IsFileExist     = true
 )
 
 type NetAddress struct {
@@ -29,7 +30,7 @@ type NetAddress struct {
 func ParseFlags() {
 	flag.StringVar(&FlagServerPort, "a", ":8080", "address and port to run server")
 	flag.StringVar(&FlagLogLevel, "l", "info", "log level")
-	flag.StringVar(&FileStoragePath, "f", "./tmp/links", "files storage path")
+	flag.StringVar(&FileStoragePath, "f", "", "files storage path")
 	flag.StringVar(&DatabaseDsn, "d", "", "database dsn")
 
 	addr := new(NetAddress)
@@ -61,11 +62,21 @@ func ParseFlags() {
 		FileStoragePath = fileStoragePath
 	}
 
+	//FileStoragePath = "./tmp/links"
+	// проверка конфигурации файла
+	switch {
+	case FileStoragePath != "":
+	case os.Getenv("FILE_STORAGE_PATH") != "":
+		FileStoragePath = os.Getenv("FILE_STORAGE_PATH")
+	default:
+		IsFileExist = false
+	}
+
 	//os.Setenv("DATABASE_DSN", "user=videos password=password dbname=shortenerdatabase sslmode=disable")
 
+	// проверка конфигурации БД
 	switch {
 	case DatabaseDsn != "":
-		return
 	case os.Getenv("DATABASE_DSN") != "":
 		DatabaseDsn = os.Getenv("DATABASE_DSN")
 	default:

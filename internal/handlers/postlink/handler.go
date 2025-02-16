@@ -1,6 +1,7 @@
 package postlink
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -31,7 +32,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	respStatus := http.StatusCreated
 	short, err := h.linksService.Add(string(body))
 	if err != nil {
-		if internal_errors.IsClientError(err) {
+		if errors.Is(err, internal_errors.ErrURLAlreadyExists) {
 			respStatus = http.StatusConflict
 		} else {
 			http.Error(w, fmt.Sprintf("add short link error: %s", err.Error()), http.StatusInternalServerError)

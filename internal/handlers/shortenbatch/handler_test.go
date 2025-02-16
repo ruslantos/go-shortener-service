@@ -15,11 +15,11 @@ import (
 
 func TestHandler_Handle_Success(t *testing.T) {
 	service := &MocklinksService{}
-	linksIn := []models.Links{
+	linksIn := []models.Link{
 		{CorrelationID: "123", OriginalURL: "http://ivghfkudbptp.biz/qqlcxvlwy1o/pbmze/ad4hdsyf"},
 		{CorrelationID: "456", OriginalURL: "http://ivghfkudbptp.biz/qqlcxvlwy1o/pbmze/ad4hdsyf2"},
 	}
-	linksOut := []models.Links{
+	linksOut := []models.Link{
 		{CorrelationID: "123", OriginalURL: "http://ivghfkudbptp.biz/qqlcxvlwy1o/pbmze/ad4hdsyf", ShortURL: "qwerty1"},
 		{CorrelationID: "456", OriginalURL: "http://ivghfkudbptp.biz/qqlcxvlwy1o/pbmze/ad4hdsyf2", ShortURL: "qwerty2"},
 	}

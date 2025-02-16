@@ -2,6 +2,7 @@ package shortenbatch
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 
@@ -11,7 +12,7 @@ import (
 )
 
 type linksService interface {
-	AddBatch(links []models.Links) ([]models.Links, error)
+	AddBatch(links []models.Link) ([]models.Link, error)
 }
 
 type Handler struct {
@@ -39,7 +40,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	links, err := h.linksService.AddBatch(prepareRequest(body))
 	respStatus := http.StatusCreated
 	if err != nil {
-		if internal_errors.IsClientError(err) {
+		if errors.Is(err, internal_errors.ErrURLAlreadyExists) {
 			respStatus = http.StatusConflict
 		} else {
 			http.Error(w, "add batch shorten error", http.StatusInternalServerError)
@@ -59,15 +60,15 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-func prepareRequest(body ShortenBatchRequest) []models.Links {
-	links := make([]models.Links, len(body))
+func prepareRequest(body ShortenBatchRequest) []models.Link {
+	links := make([]models.Link, len(body))
 	for i, link := range body {
-		links[i] = models.Links{OriginalURL: link.OriginalURL, CorrelationID: link.CorrelationID}
+		links[i] = models.Link{OriginalURL: link.OriginalURL, CorrelationID: link.CorrelationID}
 	}
 	return links
 }
 
-func prepareResponse(links []models.Links) ShortenBatchResponse {
+func prepareResponse(links []models.Link) ShortenBatchResponse {
 	resp := ShortenBatchResponse{}
 	for _, link := range links {
 		resp = append(resp, BatchShortURLs{CorrelationID: link.CorrelationID, ShortURL: config.FlagShortURL + link.ShortURL})

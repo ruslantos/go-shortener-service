@@ -34,36 +34,37 @@ func main() {
 	if config.IsDatabaseExist {
 		db, err = sqlx.Open("pgx", config.DatabaseDsn)
 		if err != nil {
-			panic(err)
+			logger.GetLogger().Fatal("cannot connect to database", zap.Error(err))
 		}
 		defer db.Close()
 	}
 
 	fileProducer, err := fileClient.NewProducer(config.FileStoragePath)
 	if err != nil {
-		panic(err)
+		logger.GetLogger().Fatal("cannot create file producer", zap.Error(err))
 	}
 
 	fileConsumer, err := fileClient.NewConsumer(config.FileStoragePath)
 	if err != nil {
-		panic(err)
+		logger.GetLogger().Fatal("cannot create file consumer", zap.Error(err))
 	}
 
-	linkRepo := storage.NewLinksStorage(fileConsumer, db)
+	linkDBRepo := storage.NewLinksStorage(fileConsumer, db)
+	linkMapRepo := storage.NewMapLinksStorage(fileConsumer)
 
 	if config.IsDatabaseExist {
-		err = linkRepo.InitDB()
+		err = linkDBRepo.InitDB()
 		if err != nil {
-			panic(err)
+			logger.GetLogger().Fatal("cannot initialize database", zap.Error(err))
 		}
 	} else {
-		err = linkRepo.InitLinkMap()
+		err = linkMapRepo.InitLinkMap()
 		if err != nil {
-			panic(err)
+			logger.GetLogger().Fatal("cannot initialize link map", zap.Error(err))
 		}
 	}
 
-	linkService := links.NewLinkService(linkRepo, fileProducer)
+	linkService := links.NewLinkService(linkDBRepo, linkMapRepo, fileProducer)
 
 	postLinkHandler := postlink.New(linkService)
 	getLinkHandler := getlink.New(linkService)
@@ -81,6 +82,6 @@ func main() {
 
 	err = http.ListenAndServe(config.FlagServerPort, r)
 	if err != nil {
-		panic(err)
+		logger.GetLogger().Fatal("cannot start server", zap.Error(err))
 	}
 }

@@ -20,7 +20,7 @@ func New(linksService linksService) *Handler {
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	err := h.linksService.Ping()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to get long link: %s", err.Error()), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("failed to ping: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
 
