@@ -39,14 +39,18 @@ func main() {
 		defer db.Close()
 	}
 
-	fileProducer, err := fileClient.NewProducer(config.FileStoragePath)
-	if err != nil {
-		logger.GetLogger().Fatal("cannot create file producer", zap.Error(err))
-	}
+	var fileProducer *fileClient.Producer
+	var fileConsumer *fileClient.Consumer
+	if config.IsFileExist {
+		fileProducer, err = fileClient.NewProducer(config.FileStoragePath)
+		if err != nil {
+			logger.GetLogger().Fatal("cannot create file producer", zap.Error(err))
+		}
 
-	fileConsumer, err := fileClient.NewConsumer(config.FileStoragePath)
-	if err != nil {
-		logger.GetLogger().Fatal("cannot create file consumer", zap.Error(err))
+		fileConsumer, err = fileClient.NewConsumer(config.FileStoragePath)
+		if err != nil {
+			logger.GetLogger().Fatal("cannot create file consumer", zap.Error(err))
+		}
 	}
 
 	linkDBRepo := storage.NewLinksStorage(fileConsumer, db)
