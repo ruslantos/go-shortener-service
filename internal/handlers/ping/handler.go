@@ -1,12 +1,13 @@
 package ping
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 )
 
 type linksService interface {
-	Ping() error
+	Ping(ctx context.Context) error
 }
 
 type Handler struct {
@@ -18,7 +19,7 @@ func New(linksService linksService) *Handler {
 }
 
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
-	err := h.linksService.Ping()
+	err := h.linksService.Ping(r.Context())
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to ping: %s", err.Error()), http.StatusInternalServerError)
 		return

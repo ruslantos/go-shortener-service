@@ -19,6 +19,7 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/middleware/compress"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/storage"
+	"github.com/ruslantos/go-shortener-service/internal/storage/mapfile"
 )
 
 func main() {
@@ -53,22 +54,25 @@ func main() {
 		}
 	}
 
-	linkDBRepo := storage.NewLinksStorage(fileConsumer, db)
-	linkMapRepo := storage.NewMapLinksStorage(fileConsumer)
+	//linkDBRepo := storage.NewLinksStorage(fileConsumer, db)
+	//linkMapRepo := storage.NewMapLinksStorage(fileConsumer)
+	var linksRepo storage.LinksStorage
 
 	if config.IsDatabaseExist {
-		err = linkDBRepo.InitDB()
+		linksRepo = *storage.NewLinksStorage(fileConsumer, db)
+		err = linksRepo.InitStorage()
 		if err != nil {
 			logger.GetLogger().Fatal("cannot initialize database", zap.Error(err))
 		}
 	} else {
-		err = linkMapRepo.InitLinkMap()
+		linksRepo = *mapfile.NewMapLinksStorage(fileConsumer, fileProducer)
+		err = linksRepo.InitStorage()
 		if err != nil {
 			logger.GetLogger().Fatal("cannot initialize link map", zap.Error(err))
 		}
 	}
 
-	linkService := links.NewLinkService(linkDBRepo, linkMapRepo, fileProducer)
+	linkService := links.NewLinkService(linksRepo)
 
 	postLinkHandler := postlink.New(linkService)
 	getLinkHandler := getlink.New(linkService)

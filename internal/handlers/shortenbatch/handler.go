@@ -24,14 +24,19 @@ func New(linksService linksService) *Handler {
 }
 
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
-	bodyRaw, _ := io.ReadAll(r.Body)
+	bodyRaw, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Reading body error", http.StatusBadRequest)
+		return
+	}
+
 	if len(bodyRaw) == 0 {
 		http.Error(w, "Error reading body", http.StatusBadRequest)
 		return
 	}
 
 	var body ShortenBatchRequest
-	err := json.Unmarshal(bodyRaw, &body)
+	err = json.Unmarshal(bodyRaw, &body)
 	if err != nil || body == nil || len(body) == 0 {
 		http.Error(w, "Unmarshalling body error", http.StatusBadRequest)
 		return
