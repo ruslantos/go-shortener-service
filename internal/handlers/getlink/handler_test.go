@@ -1,6 +1,7 @@
 package getlink
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -11,7 +12,7 @@ import (
 
 func TestHandler_Handle_Success(t *testing.T) {
 	service := &MocklinksService{}
-	service.EXPECT().Get("short").Return("extend", nil)
+	service.EXPECT().Get(context.Background(), "short").Return("extend", nil)
 	h := New(service)
 	req, err := http.NewRequest(http.MethodGet, "short", nil)
 	assert.NoError(t, err)
@@ -24,7 +25,7 @@ func TestHandler_Handle_Success(t *testing.T) {
 
 func TestHandler_Handle_BadRequest(t *testing.T) {
 	storage := &MocklinksService{}
-	storage.EXPECT().Get("short").Return("", errors.New("some error"))
+	storage.EXPECT().Get(context.Background(), "short").Return("", errors.New("some error"))
 	h := New(storage)
 	req, err := http.NewRequest(http.MethodGet, "short", nil)
 	assert.NoError(t, err)
