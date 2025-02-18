@@ -1,6 +1,7 @@
 package postlink
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -14,7 +15,7 @@ import (
 func TestHandler_Handle_Success(t *testing.T) {
 	extend := "http://ivghfkudbptp.biz/qqlcxvlwy1o/pbmze/ad4hdsyf"
 	service := &MocklinksService{}
-	service.EXPECT().Add(extend).Return("short", nil)
+	service.EXPECT().Add(context.Background(), extend).Return("short", nil)
 	h := New(service)
 	req, err := http.NewRequest(http.MethodPost, "", io.NopCloser(strings.NewReader(extend)))
 	assert.NoError(t, err)
@@ -42,7 +43,7 @@ func TestHandler_Handle_ErrorEmptyBody(t *testing.T) {
 func TestHandler_Handle_ErrorLinkService(t *testing.T) {
 	extend := "http://ivghfkudbptp.biz/qqlcxvlwy1o/pbmze/ad4hdsyf"
 	service := &MocklinksService{}
-	service.EXPECT().Add(extend).Return("short", errors.New("some error"))
+	service.EXPECT().Add(context.Background(), extend).Return("short", errors.New("some error"))
 	h := New(service)
 	req, err := http.NewRequest(http.MethodPost, "", io.NopCloser(strings.NewReader(extend)))
 	assert.NoError(t, err)

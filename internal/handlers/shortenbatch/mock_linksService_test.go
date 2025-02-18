@@ -3,6 +3,8 @@
 package shortenbatch
 
 import (
+	context "context"
+
 	models "github.com/ruslantos/go-shortener-service/internal/models"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -20,9 +22,9 @@ func (_m *MocklinksService) EXPECT() *MocklinksService_Expecter {
 	return &MocklinksService_Expecter{mock: &_m.Mock}
 }
 
-// AddBatch provides a mock function with given fields: links
-func (_m *MocklinksService) AddBatch(links []models.Link) ([]models.Link, error) {
-	ret := _m.Called(links)
+// AddBatch provides a mock function with given fields: ctx, links
+func (_m *MocklinksService) AddBatch(ctx context.Context, links []models.Link) ([]models.Link, error) {
+	ret := _m.Called(ctx, links)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AddBatch")
@@ -30,19 +32,19 @@ func (_m *MocklinksService) AddBatch(links []models.Link) ([]models.Link, error)
 
 	var r0 []models.Link
 	var r1 error
-	if rf, ok := ret.Get(0).(func([]models.Link) ([]models.Link, error)); ok {
-		return rf(links)
+	if rf, ok := ret.Get(0).(func(context.Context, []models.Link) ([]models.Link, error)); ok {
+		return rf(ctx, links)
 	}
-	if rf, ok := ret.Get(0).(func([]models.Link) []models.Link); ok {
-		r0 = rf(links)
+	if rf, ok := ret.Get(0).(func(context.Context, []models.Link) []models.Link); ok {
+		r0 = rf(ctx, links)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]models.Link)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func([]models.Link) error); ok {
-		r1 = rf(links)
+	if rf, ok := ret.Get(1).(func(context.Context, []models.Link) error); ok {
+		r1 = rf(ctx, links)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -56,14 +58,15 @@ type MocklinksService_AddBatch_Call struct {
 }
 
 // AddBatch is a helper method to define mock.On call
+//   - ctx context.Context
 //   - links []models.Link
-func (_e *MocklinksService_Expecter) AddBatch(links interface{}) *MocklinksService_AddBatch_Call {
-	return &MocklinksService_AddBatch_Call{Call: _e.mock.On("AddBatch", links)}
+func (_e *MocklinksService_Expecter) AddBatch(ctx interface{}, links interface{}) *MocklinksService_AddBatch_Call {
+	return &MocklinksService_AddBatch_Call{Call: _e.mock.On("AddBatch", ctx, links)}
 }
 
-func (_c *MocklinksService_AddBatch_Call) Run(run func(links []models.Link)) *MocklinksService_AddBatch_Call {
+func (_c *MocklinksService_AddBatch_Call) Run(run func(ctx context.Context, links []models.Link)) *MocklinksService_AddBatch_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].([]models.Link))
+		run(args[0].(context.Context), args[1].([]models.Link))
 	})
 	return _c
 }
@@ -73,7 +76,7 @@ func (_c *MocklinksService_AddBatch_Call) Return(_a0 []models.Link, _a1 error) *
 	return _c
 }
 
-func (_c *MocklinksService_AddBatch_Call) RunAndReturn(run func([]models.Link) ([]models.Link, error)) *MocklinksService_AddBatch_Call {
+func (_c *MocklinksService_AddBatch_Call) RunAndReturn(run func(context.Context, []models.Link) ([]models.Link, error)) *MocklinksService_AddBatch_Call {
 	_c.Call.Return(run)
 	return _c
 }
