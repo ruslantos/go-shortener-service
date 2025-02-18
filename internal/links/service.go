@@ -34,7 +34,7 @@ func NewLinkService(linksStorage linksStorage) *LinkService {
 	}
 }
 
-func (l *LinkService) Get(shortLink string) (string, error) {
+func (l *LinkService) Get(ctx context.Context, shortLink string) (string, error) {
 	v, ok, err := l.linksStorage.GetLink(shortLink)
 	if err != nil {
 		return "", err
@@ -45,7 +45,7 @@ func (l *LinkService) Get(shortLink string) (string, error) {
 	return v, nil
 }
 
-func (l *LinkService) Add(long string) (string, error) {
+func (l *LinkService) Add(ctx context.Context, long string) (string, error) {
 	link := models.Link{
 		ShortURL:    uuid.New().String(),
 		OriginalURL: long,
@@ -72,7 +72,7 @@ func (l *LinkService) Add(long string) (string, error) {
 	return link.ShortURL, nil
 }
 
-func (l *LinkService) AddBatch(links []models.Link) ([]models.Link, error) {
+func (l *LinkService) AddBatch(ctx context.Context, links []models.Link) ([]models.Link, error) {
 	for i := range links {
 		links[i].ShortURL = uuid.New().String()
 	}

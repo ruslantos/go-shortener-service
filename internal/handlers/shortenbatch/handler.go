@@ -1,6 +1,7 @@
 package shortenbatch
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -12,7 +13,7 @@ import (
 )
 
 type linksService interface {
-	AddBatch(links []models.Link) ([]models.Link, error)
+	AddBatch(ctx context.Context, links []models.Link) ([]models.Link, error)
 }
 
 type Handler struct {
@@ -42,7 +43,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	links, err := h.linksService.AddBatch(prepareRequest(body))
+	links, err := h.linksService.AddBatch(r.Context(), prepareRequest(body))
 	respStatus := http.StatusCreated
 	if err != nil {
 		if errors.Is(err, internal_errors.ErrURLAlreadyExists) {

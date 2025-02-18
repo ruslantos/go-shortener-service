@@ -56,29 +56,33 @@ func main() {
 
 	//linkDBRepo := storage.NewLinksStorage(fileConsumer, db)
 	//linkMapRepo := storage.NewMapLinksStorage(fileConsumer)
-	var linksRepo storage.LinksStorage
+	//var linksRepo storage.LinksStorage
+	var linkService links.LinkService
 
 	if config.IsDatabaseExist {
-		linksRepo = *storage.NewLinksStorage(fileConsumer, db)
+		linksRepo := storage.NewLinksStorage(fileConsumer, db)
 		err = linksRepo.InitStorage()
 		if err != nil {
 			logger.GetLogger().Fatal("cannot initialize database", zap.Error(err))
 		}
+		linkService = *links.NewLinkService(linksRepo)
 	} else {
-		linksRepo = *mapfile.NewMapLinksStorage(fileConsumer, fileProducer)
+		linksRepo := mapfile.NewMapLinksStorage(fileConsumer, fileProducer)
 		err = linksRepo.InitStorage()
 		if err != nil {
 			logger.GetLogger().Fatal("cannot initialize link map", zap.Error(err))
 		}
+		linkService = *links.NewLinkService(linksRepo)
+
 	}
 
-	linkService := links.NewLinkService(linksRepo)
+	//linkService := links.NewLinkService(linksRepo)
 
-	postLinkHandler := postlink.New(linkService)
-	getLinkHandler := getlink.New(linkService)
-	shortenHandler := shorten.New(linkService)
-	pingHandler := ping.New(linkService)
-	shortenBatchHandler := shortenbatch.New(linkService)
+	postLinkHandler := postlink.New(&linkService)
+	getLinkHandler := getlink.New(&linkService)
+	shortenHandler := shorten.New(&linkService)
+	pingHandler := ping.New(&linkService)
+	shortenBatchHandler := shortenbatch.New(&linkService)
 
 	r := chi.NewRouter()
 	r.Use(compress.GzipMiddlewareWriter, compress.GzipMiddlewareReader, logger.LoggerChi(log))

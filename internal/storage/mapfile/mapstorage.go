@@ -11,7 +11,6 @@ import (
 	fileJob "github.com/ruslantos/go-shortener-service/internal/files"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/models"
-	"github.com/ruslantos/go-shortener-service/internal/storage"
 )
 
 type FileConsumer interface {
@@ -30,12 +29,12 @@ type LinksStorage struct {
 	db           *sqlx.DB
 }
 
-func NewMapLinksStorage(fileConsumer FileConsumer, fileProducer FileProducer) *storage.LinksStorage {
-	return &storage.LinksStorage{
-		LinksMap:     make(map[string]models.Link),
-		Mutex:        &sync.Mutex{},
-		FileConsumer: fileConsumer,
-		FileProducer: fileProducer,
+func NewMapLinksStorage(fileConsumer FileConsumer, fileProducer FileProducer) *LinksStorage {
+	return &LinksStorage{
+		linksMap:     make(map[string]models.Link),
+		mutex:        &sync.Mutex{},
+		fileConsumer: fileConsumer,
+		fileProducer: fileProducer,
 	}
 }
 
@@ -98,5 +97,9 @@ func (l *LinksStorage) writeFile(link models.Link) error {
 	if err != nil {
 		return errors.New("write events error")
 	}
+	return nil
+}
+
+func (l LinksStorage) Ping() error {
 	return nil
 }

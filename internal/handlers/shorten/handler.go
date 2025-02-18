@@ -1,6 +1,7 @@
 package shorten
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -11,7 +12,7 @@ import (
 )
 
 type linksService interface {
-	Add(long string) (string, error)
+	Add(ctx context.Context, long string) (string, error)
 }
 
 type Handler struct {
@@ -42,7 +43,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respStatus := http.StatusCreated
-	short, err := h.linksService.Add(body.URL)
+	short, err := h.linksService.Add(r.Context(), body.URL)
 	if err != nil {
 		if errors.Is(err, internal_errors.ErrURLAlreadyExists) {
 			respStatus = http.StatusConflict

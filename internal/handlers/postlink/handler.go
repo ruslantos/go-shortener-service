@@ -1,6 +1,7 @@
 package postlink
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -11,7 +12,7 @@ import (
 )
 
 type linksService interface {
-	Add(long string) (string, error)
+	Add(ctx context.Context, long string) (string, error)
 }
 
 type Handler struct {
@@ -35,7 +36,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respStatus := http.StatusCreated
-	short, err := h.linksService.Add(string(body))
+	short, err := h.linksService.Add(r.Context(), string(body))
 	if err != nil {
 		if errors.Is(err, internal_errors.ErrURLAlreadyExists) {
 			respStatus = http.StatusConflict
