@@ -12,17 +12,11 @@ import (
 )
 
 type linksStorage interface {
-	AddLink(link models.Link) (models.Link, error)
-	GetLink(value string) (string, bool, error)
-	Ping() error
+	AddLink(ctx context.Context, link models.Link) (models.Link, error)
+	GetLink(ctx context.Context, value string) (string, bool, error)
+	Ping(ctx context.Context) error
 	AddLinkBatch(ctx context.Context, links []models.Link) ([]models.Link, error)
 }
-
-//type linksMapStorage interface {
-//	AddLink(link models.Link) (models.Link, error)
-//	GetLink(value string) (string, bool, error)
-//	AddLinkBatch(ctx context.Context, links []models.Link) ([]models.Link, error)
-//}
 
 type LinkService struct {
 	linksStorage linksStorage
@@ -35,7 +29,7 @@ func NewLinkService(linksStorage linksStorage) *LinkService {
 }
 
 func (l *LinkService) Get(ctx context.Context, shortLink string) (string, error) {
-	v, ok, err := l.linksStorage.GetLink(shortLink)
+	v, ok, err := l.linksStorage.GetLink(ctx, shortLink)
 	if err != nil {
 		return "", err
 	}
@@ -51,23 +45,10 @@ func (l *LinkService) Add(ctx context.Context, long string) (string, error) {
 		OriginalURL: long,
 	}
 
-	//switch {
-	//case config.IsDatabaseExist:
-	savedLink, err := l.linksStorage.AddLink(link)
+	savedLink, err := l.linksStorage.AddLink(ctx, link)
 	if err != nil {
 		return savedLink.ShortURL, err
 	}
-	//default:
-	//	savedLink, err := l.linksMapStorage.AddLink(link)
-	//	if err != nil {
-	//		return savedLink.ShortURL, err
-	//	}
-	//
-	//	err = l.writeFile(link)
-	//	if err != nil {
-	//		return link.ShortURL, err
-	//	}
-	//}
 
 	return link.ShortURL, nil
 }
@@ -79,31 +60,15 @@ func (l *LinkService) AddBatch(ctx context.Context, links []models.Link) ([]mode
 	var linksSaved []models.Link
 	var err error
 
-	//switch {
-	//case config.IsDatabaseExist:
-	linksSaved, err = l.linksStorage.AddLinkBatch(context.Background(), links)
+	linksSaved, err = l.linksStorage.AddLinkBatch(ctx, links)
 	if err != nil {
 		logger.GetLogger().Error("add link batch error", zap.Error(err))
 		return linksSaved, err
 	}
-	//default:
-	//	linksSaved, err = l.linksMapStorage.AddLinkBatch(context.Background(), links)
-	//	if err != nil {
-	//		logger.GetLogger().Error("add link batch error", zap.Error(err))
-	//		return linksSaved, err
-	//	}
-	//
-	//	for _, link := range linksSaved {
-	//		err = l.writeFile(link)
-	//		if err != nil {
-	//			return linksSaved, err
-	//		}
-	//	}
-	//}
 
 	return linksSaved, nil
 }
 
 func (l *LinkService) Ping(ctx context.Context) error {
-	return l.linksStorage.Ping()
+	return l.linksStorage.Ping(ctx)
 }

@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/jmoiron/sqlx"
 
 	fileJob "github.com/ruslantos/go-shortener-service/internal/files"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
@@ -26,7 +25,6 @@ type LinksStorage struct {
 	mutex        *sync.Mutex
 	fileConsumer FileConsumer
 	fileProducer FileProducer
-	db           *sqlx.DB
 }
 
 func NewMapLinksStorage(fileConsumer FileConsumer, fileProducer FileProducer) *LinksStorage {
@@ -38,7 +36,7 @@ func NewMapLinksStorage(fileConsumer FileConsumer, fileProducer FileProducer) *L
 	}
 }
 
-func (l *LinksStorage) AddLink(link models.Link) (models.Link, error) {
+func (l *LinksStorage) AddLink(ctx context.Context, link models.Link) (models.Link, error) {
 	l.addLinksToMap([]models.Link{link})
 
 	err := l.writeFile(link)
@@ -61,7 +59,7 @@ func (l *LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link) ([
 	return links, nil
 }
 
-func (l *LinksStorage) GetLink(value string) (string, bool, error) {
+func (l *LinksStorage) GetLink(ctx context.Context, value string) (string, bool, error) {
 	result, ok := l.linksMap[value]
 	return result.OriginalURL, ok, nil
 }
@@ -100,6 +98,6 @@ func (l *LinksStorage) writeFile(link models.Link) error {
 	return nil
 }
 
-func (l LinksStorage) Ping() error {
+func (l LinksStorage) Ping(context.Context) error {
 	return nil
 }

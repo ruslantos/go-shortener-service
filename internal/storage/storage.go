@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -15,34 +14,26 @@ import (
 	internal_errors "github.com/ruslantos/go-shortener-service/internal/errors"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/models"
-	"github.com/ruslantos/go-shortener-service/internal/storage/mapfile"
 )
 
 type LinksStorage struct {
-	LinksMap     map[string]models.Link
-	Mutex        *sync.Mutex
-	FileConsumer mapfile.FileConsumer
-	FileProducer mapfile.FileProducer
-	Db           *sqlx.DB
+	db *sqlx.DB
 }
 
-func NewLinksStorage(fileConsumer mapfile.FileConsumer, db *sqlx.DB) *LinksStorage {
+func NewLinksStorage(db *sqlx.DB) *LinksStorage {
 	return &LinksStorage{
-		LinksMap:     make(map[string]models.Link),
-		Mutex:        &sync.Mutex{},
-		FileConsumer: fileConsumer,
-		Db:           db,
+		db: db,
 	}
 }
 
-func (l LinksStorage) AddLink(link models.Link) (models.Link, error) {
-	rows, err := l.Db.QueryContext(context.Background(),
+func (l LinksStorage) AddLink(ctx context.Context, link models.Link) (models.Link, error) {
+	rows, err := l.db.QueryContext(context.Background(),
 		"INSERT INTO links  (short_url, original_url) VALUES ($1, $2)", link.ShortURL, link.OriginalURL)
 	if err != nil || rows.Err() != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok {
 			if pgErr.Code == pgerrcode.UniqueViolation {
 				//если url уже есть в базе, то берем из базы имеющиеся данные
-				result := l.Db.QueryRowContext(context.Background(),
+				result := l.db.QueryRowContext(context.Background(),
 					"SELECT short_url, original_url FROM links where original_url= $1", link.OriginalURL)
 				if result.Err() != nil {
 					return link, err
@@ -60,7 +51,7 @@ func (l LinksStorage) AddLink(link models.Link) (models.Link, error) {
 }
 
 func (l LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link) ([]models.Link, error) {
-	tx, err := l.Db.Begin()
+	tx, err := l.db.Begin()
 	if err != nil {
 		return nil, err
 	}
@@ -109,8 +100,8 @@ func (l LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link) ([]
 	return links, errorDB
 }
 
-func (l LinksStorage) GetLink(value string) (string, bool, error) {
-	row := l.Db.QueryRowContext(context.Background(),
+func (l LinksStorage) GetLink(ctx context.Context, value string) (string, bool, error) {
+	row := l.db.QueryRowContext(context.Background(),
 		"SELECT original_url FROM links where short_url = $1 LIMIT 1", value)
 	var long string
 	err := row.Scan(&long)
@@ -123,11 +114,11 @@ func (l LinksStorage) GetLink(value string) (string, bool, error) {
 	return long, true, nil
 }
 
-func (l LinksStorage) Ping() error {
-	if l.Db == nil {
+func (l LinksStorage) Ping(ctx context.Context) error {
+	if l.db == nil {
 		return fmt.Errorf("database connection is nil")
 	}
-	err := l.Db.Ping()
+	err := l.db.Ping()
 	if err != nil {
 		logger.GetLogger().Error(err.Error())
 	}
@@ -136,7 +127,7 @@ func (l LinksStorage) Ping() error {
 }
 
 func (l LinksStorage) InitStorage() error {
-	_, err := l.Db.ExecContext(context.Background(),
+	_, err := l.db.ExecContext(context.Background(),
 		`CREATE TABLE IF NOT EXISTS links(short_url TEXT,original_url TEXT, correlation_id TEXT);
 				CREATE UNIQUE INDEX IF NOT EXISTS idx_original_url ON links(original_url);`)
 	if err != nil {

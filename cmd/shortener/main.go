@@ -54,13 +54,10 @@ func main() {
 		}
 	}
 
-	//linkDBRepo := storage.NewLinksStorage(fileConsumer, db)
-	//linkMapRepo := storage.NewMapLinksStorage(fileConsumer)
-	//var linksRepo storage.LinksStorage
 	var linkService links.LinkService
 
 	if config.IsDatabaseExist {
-		linksRepo := storage.NewLinksStorage(fileConsumer, db)
+		linksRepo := storage.NewLinksStorage(db)
 		err = linksRepo.InitStorage()
 		if err != nil {
 			logger.GetLogger().Fatal("cannot initialize database", zap.Error(err))
@@ -75,8 +72,6 @@ func main() {
 		linkService = *links.NewLinkService(linksRepo)
 
 	}
-
-	//linkService := links.NewLinkService(linksRepo)
 
 	postLinkHandler := postlink.New(&linkService)
 	getLinkHandler := getlink.New(&linkService)
