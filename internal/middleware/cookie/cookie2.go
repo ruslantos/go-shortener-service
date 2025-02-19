@@ -15,6 +15,12 @@ var (
 	secretKey = []byte("your-secret-key") // Секретный ключ для подписи
 )
 
+type contextKey string
+
+const (
+	UserIDKey contextKey = "userID"
+)
+
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Получаем куку
@@ -99,13 +105,13 @@ func generateUserID() string {
 
 // Вспомогательная функция для передачи userID в контекст запроса
 func setUserIDToContext(r *http.Request, userID string) *http.Request {
-	ctx := context.WithValue(r.Context(), "userID", userID)
+	ctx := context.WithValue(r.Context(), UserIDKey, userID)
 	return r.WithContext(ctx)
 }
 
 // Вспомогательная функция для получения userID из контекста запроса
 func getUserIDFromContext(r *http.Request) string {
-	userID, ok := r.Context().Value("userID").(string)
+	userID, ok := r.Context().Value(UserIDKey).(string)
 	if !ok {
 		return ""
 	}

@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
+	"github.com/ruslantos/go-shortener-service/internal/middleware/cookie"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/models"
 )
@@ -48,7 +49,7 @@ func (l *LinkService) Get(ctx context.Context, shortLink string) (string, error)
 
 func (l *LinkService) Add(ctx context.Context, long string) (string, error) {
 	//userID := l.user.UserFromContext(ctx)
-	userID, _ := ctx.Value("userID").(string)
+	userID, _ := ctx.Value(cookie.UserIDKey).(string)
 	logger.GetLogger().Info("get userID", zap.String("userID", userID))
 
 	link := models.Link{
@@ -86,7 +87,7 @@ func (l *LinkService) Ping(ctx context.Context) error {
 
 func (l *LinkService) GetUserUrls(ctx context.Context) ([]models.Link, error) {
 	//userID := l.user.UserFromContext(ctx)
-	userID, _ := ctx.Value("userID").(string)
+	userID, _ := ctx.Value(cookie.UserIDKey).(string)
 
 	v, err := l.linksStorage.GetUserLinks(ctx, userID)
 	if err != nil {
