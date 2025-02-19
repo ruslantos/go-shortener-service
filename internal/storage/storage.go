@@ -26,7 +26,7 @@ func NewLinksStorage(db *sqlx.DB) *LinksStorage {
 	}
 }
 
-func (l LinksStorage) AddLink(ctx context.Context, link models.Link, userId string) (models.Link, error) {
+func (l LinksStorage) AddLink(ctx context.Context, link models.Link, userID string) (models.Link, error) {
 	rows, err := l.db.QueryContext(context.Background(),
 		"INSERT INTO links  (short_url, original_url) VALUES ($1, $2)", link.ShortURL, link.OriginalURL)
 	if err != nil || rows.Err() != nil {
@@ -47,7 +47,7 @@ func (l LinksStorage) AddLink(ctx context.Context, link models.Link, userId stri
 		}
 	}
 
-	err = l.UpdateUser(ctx, link, userId)
+	err = l.UpdateUser(ctx, link, userID)
 	if err != nil {
 		return link, err
 	}
@@ -150,9 +150,9 @@ func (l LinksStorage) InitStorage() error {
 	return nil
 }
 
-func (l LinksStorage) UpdateUser(ctx context.Context, link models.Link, userId string) error {
+func (l LinksStorage) UpdateUser(ctx context.Context, link models.Link, userID string) error {
 	rows, err := l.db.QueryContext(context.Background(),
-		"INSERT INTO users  (short_url, user_id) VALUES ($1, $2)", link.ShortURL, userId)
+		"INSERT INTO users  (short_url, user_id) VALUES ($1, $2)", link.ShortURL, userID)
 
 	if err != nil || rows.Err() != nil {
 		return err
@@ -161,10 +161,10 @@ func (l LinksStorage) UpdateUser(ctx context.Context, link models.Link, userId s
 	return nil
 }
 
-func (l LinksStorage) GetUserLinks(ctx context.Context, userId string) ([]models.Link, error) {
+func (l LinksStorage) GetUserLinks(ctx context.Context, userID string) ([]models.Link, error) {
 	var links []models.Link
 	rows, err := l.db.QueryContext(ctx,
-		"SELECT l.short_url, l.original_url FROM links l JOIN users u ON l.short_url = u.short_url WHERE u.user_id = $1", userId)
+		"SELECT l.short_url, l.original_url FROM links l JOIN users u ON l.short_url = u.short_url WHERE u.user_id = $1", userID)
 	if err != nil {
 		return nil, err
 	}

@@ -26,7 +26,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 
 	c := r.Context().Value("user")
 	if c == nil {
-		http.Error(w, fmt.Sprintf("user not found"), http.StatusUnauthorized)
+		http.Error(w, "user not found", http.StatusUnauthorized)
 		return
 	}
 
