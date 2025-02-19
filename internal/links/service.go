@@ -47,7 +47,9 @@ func (l *LinkService) Get(ctx context.Context, shortLink string) (string, error)
 }
 
 func (l *LinkService) Add(ctx context.Context, long string) (string, error) {
-	userID := l.user.UserFromContext(ctx)
+	//userID := l.user.UserFromContext(ctx)
+	userID, _ := ctx.Value("userID").(string)
+	logger.GetLogger().Info("get userID", zap.String("userID", userID))
 
 	link := models.Link{
 		ShortURL:    uuid.New().String(),
@@ -83,7 +85,8 @@ func (l *LinkService) Ping(ctx context.Context) error {
 }
 
 func (l *LinkService) GetUserUrls(ctx context.Context) ([]models.Link, error) {
-	userID := l.user.UserFromContext(ctx)
+	//userID := l.user.UserFromContext(ctx)
+	userID, _ := ctx.Value("userID").(string)
 
 	v, err := l.linksStorage.GetUserLinks(ctx, userID)
 	if err != nil {

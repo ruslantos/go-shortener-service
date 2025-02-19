@@ -18,7 +18,7 @@ import (
 var secretKey = []byte("secret-key")
 
 type User struct {
-	cookie http.Cookie
+	Cookie http.Cookie
 }
 
 func NewUserService() *User {
@@ -31,12 +31,14 @@ func (u *User) UserFromContext(ctx context.Context) string {
 
 		userID, ok := verifyCookie(cookie.(string))
 		if ok {
+			logger.GetLogger().Info("get userID", zap.String("userID", userID))
 			return userID
 		}
 	}
 
 	userID := generateuserID()
-	u.cookie = createSignedCookie(userID)
+	u.Cookie = createSignedCookie(userID)
+	logger.GetLogger().Info("get userID", zap.String("userID", userID))
 	return userID
 }
 func createSignedCookie(userID string) http.Cookie {

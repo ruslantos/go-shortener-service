@@ -86,7 +86,7 @@ func main() {
 	userurlsHandler := userurls.New(&linkService)
 
 	r := chi.NewRouter()
-	r.Use(compress.GzipMiddlewareWriter, compress.GzipMiddlewareReader, logger.LoggerChi(log), cookie.CookieMiddleware)
+	r.Use(compress.GzipMiddlewareWriter, compress.GzipMiddlewareReader, logger.LoggerChi(log), cookie.AuthMiddleware)
 	r.Post("/", postLinkHandler.Handle)
 	r.Get("/{link}", getLinkHandler.Handle)
 	r.Post("/api/shorten", shortenHandler.Handle)

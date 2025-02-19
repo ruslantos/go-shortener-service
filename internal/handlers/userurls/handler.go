@@ -23,9 +23,8 @@ func New(linksService linksService) *Handler {
 }
 
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
-
-	c := r.Context().Value("user")
-	if c == nil {
+	_, ok := r.Context().Value("userID").(string)
+	if !ok {
 		http.Error(w, "user not found", http.StatusUnauthorized)
 		return
 	}
