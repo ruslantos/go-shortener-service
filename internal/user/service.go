@@ -26,7 +26,7 @@ func NewUserService() *User {
 }
 func (u *User) UserFromContext(ctx context.Context) string {
 	cookie := ctx.Value("user")
-	if u != nil {
+	if cookie != nil {
 		logger.GetLogger().Info("get cookie", zap.String("cookie", cookie.(string)))
 
 		userID, ok := verifyCookie(cookie.(string))
