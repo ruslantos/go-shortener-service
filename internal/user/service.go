@@ -26,15 +26,16 @@ func NewUserService() *User {
 }
 func (u *User) UserFromContext(ctx context.Context) string {
 	cookie := ctx.Value("user")
-	logger.GetLogger().Info("get cookie", zap.String("cookie", cookie.(string)))
 	if u != nil {
-		userId, ok := verifyCookie(cookie.(string))
+		logger.GetLogger().Info("get cookie", zap.String("cookie", cookie.(string)))
+
+		userID, ok := verifyCookie(cookie.(string))
 		if ok {
-			return userId
+			return userID
 		}
 	}
 
-	userID := generateUserID()
+	userID := generateuserID()
 	u.cookie = createSignedCookie(userID)
 	return userID
 }
@@ -83,6 +84,6 @@ func verifyCookie(cookie string) (string, bool) {
 func split(s, sep string) []string {
 	return strings.SplitN(s, sep, 2)
 }
-func generateUserID() string {
+func generateuserID() string {
 	return fmt.Sprintf("%d", time.Now().UnixNano())
 }
