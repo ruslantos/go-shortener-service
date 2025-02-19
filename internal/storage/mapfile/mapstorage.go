@@ -36,7 +36,7 @@ func NewMapLinksStorage(fileConsumer FileConsumer, fileProducer FileProducer) *L
 	}
 }
 
-func (l *LinksStorage) AddLink(ctx context.Context, link models.Link) (models.Link, error) {
+func (l *LinksStorage) AddLink(ctx context.Context, link models.Link, userId string) (models.Link, error) {
 	l.addLinksToMap([]models.Link{link})
 
 	err := l.writeFile(link)
@@ -100,4 +100,8 @@ func (l *LinksStorage) writeFile(link models.Link) error {
 
 func (l LinksStorage) Ping(context.Context) error {
 	return nil
+}
+
+func (l *LinksStorage) GetUserLinks(ctx context.Context, userId string) ([]models.Link, error) {
+	return nil, nil
 }

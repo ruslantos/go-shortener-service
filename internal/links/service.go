@@ -12,19 +12,26 @@ import (
 )
 
 type linksStorage interface {
-	AddLink(ctx context.Context, link models.Link) (models.Link, error)
+	AddLink(ctx context.Context, link models.Link, userId string) (models.Link, error)
 	GetLink(ctx context.Context, value string) (string, bool, error)
 	Ping(ctx context.Context) error
 	AddLinkBatch(ctx context.Context, links []models.Link) ([]models.Link, error)
+	GetUserLinks(ctx context.Context, userId string) ([]models.Link, error)
+}
+
+type user interface {
+	UserFromContext(ctx context.Context) string
 }
 
 type LinkService struct {
 	linksStorage linksStorage
+	user         user
 }
 
-func NewLinkService(linksStorage linksStorage) *LinkService {
+func NewLinkService(linksStorage linksStorage, user user) *LinkService {
 	return &LinkService{
 		linksStorage: linksStorage,
+		user:         user,
 	}
 }
 
@@ -40,12 +47,14 @@ func (l *LinkService) Get(ctx context.Context, shortLink string) (string, error)
 }
 
 func (l *LinkService) Add(ctx context.Context, long string) (string, error) {
+	userId := l.user.UserFromContext(ctx)
+
 	link := models.Link{
 		ShortURL:    uuid.New().String(),
 		OriginalURL: long,
 	}
 
-	savedLink, err := l.linksStorage.AddLink(ctx, link)
+	savedLink, err := l.linksStorage.AddLink(ctx, link, userId)
 	if err != nil {
 		return savedLink.ShortURL, err
 	}
@@ -71,4 +80,14 @@ func (l *LinkService) AddBatch(ctx context.Context, links []models.Link) ([]mode
 
 func (l *LinkService) Ping(ctx context.Context) error {
 	return l.linksStorage.Ping(ctx)
+}
+
+func (l *LinkService) GetUserUrls(ctx context.Context) ([]models.Link, error) {
+	userId := l.user.UserFromContext(ctx)
+
+	v, err := l.linksStorage.GetUserLinks(ctx, userId)
+	if err != nil {
+		return nil, err
+	}
+	return v, nil
 }
