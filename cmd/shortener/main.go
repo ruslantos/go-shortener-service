@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/jmoiron/sqlx"
 
@@ -31,6 +32,8 @@ func main() {
 		panic("cannot initialize zap")
 	}
 	defer logger.Sync()
+
+	os.Setenv("GIN_MODE", "release")
 
 	config.ParseFlags()
 
@@ -86,6 +89,7 @@ func main() {
 	userurlsHandler := userurls.New(&linkService)
 
 	r := chi.NewRouter()
+
 	r.Use(compress.GzipMiddlewareWriter, compress.GzipMiddlewareReader, logger.LoggerChi(log), cookie.AuthMiddleware)
 	r.Post("/", postLinkHandler.Handle)
 	r.Get("/{link}", getLinkHandler.Handle)
