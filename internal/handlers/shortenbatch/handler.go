@@ -1,4 +1,4 @@
-package shorten
+package shortenbatch
 
 import (
 	"context"
@@ -9,10 +9,11 @@ import (
 
 	"github.com/ruslantos/go-shortener-service/internal/config"
 	internal_errors "github.com/ruslantos/go-shortener-service/internal/errors"
+	"github.com/ruslantos/go-shortener-service/internal/models"
 )
 
 type linksService interface {
-	Add(ctx context.Context, long string) (string, error)
+	AddBatch(ctx context.Context, links []models.Link) ([]models.Link, error)
 }
 
 type Handler struct {
@@ -29,31 +30,31 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Reading body error", http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
+
 	if len(bodyRaw) == 0 {
 		http.Error(w, "Error reading body", http.StatusBadRequest)
 		return
 	}
 
-	var body ShortenRequest
+	var body ShortenBatchRequest
 	err = json.Unmarshal(bodyRaw, &body)
-	if err != nil {
-		http.Error(w, "Unmarshalling error", http.StatusBadRequest)
+	if err != nil || body == nil || len(body) == 0 {
+		http.Error(w, "Unmarshalling body error", http.StatusBadRequest)
 		return
 	}
 
+	links, err := h.linksService.AddBatch(r.Context(), prepareRequest(body))
 	respStatus := http.StatusCreated
-	short, err := h.linksService.Add(r.Context(), body.URL)
 	if err != nil {
 		if errors.Is(err, internal_errors.ErrURLAlreadyExists) {
 			respStatus = http.StatusConflict
 		} else {
-			http.Error(w, "Write event error", http.StatusInternalServerError)
+			http.Error(w, "add batch shorten error", http.StatusInternalServerError)
 			return
 		}
 	}
 
-	resp := ShortenResponse{Result: config.FlagShortURL + short}
+	resp := prepareResponse(links)
 	result, err := json.Marshal(resp)
 	if err != nil {
 		http.Error(w, "Marshalling error", http.StatusBadRequest)
@@ -63,4 +64,20 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(respStatus)
 	w.Write(result)
+}
+
+func prepareRequest(body ShortenBatchRequest) []models.Link {
+	links := make([]models.Link, len(body))
+	for i, link := range body {
+		links[i] = models.Link{OriginalURL: link.OriginalURL, CorrelationID: link.CorrelationID}
+	}
+	return links
+}
+
+func prepareResponse(links []models.Link) ShortenBatchResponse {
+	resp := ShortenBatchResponse{}
+	for _, link := range links {
+		resp = append(resp, BatchShortURLs{CorrelationID: link.CorrelationID, ShortURL: config.FlagShortURL + link.ShortURL})
+	}
+	return resp
 }

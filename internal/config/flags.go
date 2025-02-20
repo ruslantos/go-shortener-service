@@ -17,6 +17,9 @@ var (
 	FlagShortURL    = "http://localhost:8080/"
 	FlagLogLevel    = ""
 	FileStoragePath = ""
+	DatabaseDsn     = "user=videos password=password dbname=shortenerdatabase sslmode=disable"
+	IsDatabaseExist = true
+	IsFileExist     = true
 )
 
 type NetAddress struct {
@@ -28,6 +31,7 @@ func ParseFlags() {
 	flag.StringVar(&FlagServerPort, "a", ":8080", "address and port to run server")
 	flag.StringVar(&FlagLogLevel, "l", "info", "log level")
 	flag.StringVar(&FileStoragePath, "f", "./tmp/links", "files storage path")
+	flag.StringVar(&DatabaseDsn, "d", "", "database dsn")
 
 	addr := new(NetAddress)
 	_ = flag.Value(addr)
@@ -57,11 +61,35 @@ func ParseFlags() {
 	if fileStoragePath := os.Getenv("FILE_STORAGE_PATH"); fileStoragePath != "" {
 		FileStoragePath = fileStoragePath
 	}
-	logger.GetLogger().Info("Init links config",
+
+	//FileStoragePath = "./tmp/links"
+	// проверка конфигурации файла
+	switch {
+	case FileStoragePath != "":
+	case os.Getenv("FILE_STORAGE_PATH") != "":
+		FileStoragePath = os.Getenv("FILE_STORAGE_PATH")
+	default:
+		IsFileExist = false
+	}
+
+	//os.Setenv("DATABASE_DSN", "user=videos password=password dbname=shortenerdatabase sslmode=disable")
+
+	// проверка конфигурации БД
+	switch {
+	case DatabaseDsn != "":
+	case os.Getenv("DATABASE_DSN") != "":
+		DatabaseDsn = os.Getenv("DATABASE_DSN")
+	default:
+		IsDatabaseExist = false
+	}
+
+	logger.GetLogger().Info("Init service config",
 		zap.String("SERVER_PORT", FlagServerPort),
 		zap.String("SHORT_URL", FlagShortURL),
 		zap.String("LOG_LEVEL", FlagLogLevel),
 		zap.String("STORAGE_PATH", FileStoragePath),
+		zap.String("DATABASE_DSN", DatabaseDsn),
+		zap.Boolp("IsDatabaseExist", &IsDatabaseExist),
 	)
 }
 

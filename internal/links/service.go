@@ -1,53 +1,74 @@
 package links
 
 import (
+	"context"
 	"errors"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 
-	fileJob "github.com/ruslantos/go-shortener-service/internal/files"
+	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
+	"github.com/ruslantos/go-shortener-service/internal/models"
 )
 
 type linksStorage interface {
-	AddLink(raw string) string
-	GetLink(value string) (key string, ok bool)
+	AddLink(ctx context.Context, link models.Link) (models.Link, error)
+	GetLink(ctx context.Context, value string) (string, bool, error)
+	Ping(ctx context.Context) error
+	AddLinkBatch(ctx context.Context, links []models.Link) ([]models.Link, error)
 }
 
-type fileProducer interface {
-	WriteEvent(event *fileJob.Event) error
-}
-
-type Link struct {
+type LinkService struct {
 	linksStorage linksStorage
-	fileProducer fileProducer
 }
 
-func NewLinkService(linksStorage linksStorage, fileProducer fileProducer) *Link {
-	return &Link{
+func NewLinkService(linksStorage linksStorage) *LinkService {
+	return &LinkService{
 		linksStorage: linksStorage,
-		fileProducer: fileProducer,
 	}
 }
 
-func (l *Link) Get(shortLink string) (string, error) {
-	v, ok := l.linksStorage.GetLink(shortLink)
+func (l *LinkService) Get(ctx context.Context, shortLink string) (string, error) {
+	v, ok, err := l.linksStorage.GetLink(ctx, shortLink)
+	if err != nil {
+		return "", err
+	}
 	if !ok {
 		return v, errors.New("link not found")
 	}
 	return v, nil
 }
 
-func (l *Link) Add(long string) (string, error) {
-	short := l.linksStorage.AddLink(long)
-
-	event := &fileJob.Event{
-		ID:          uuid.New().String(),
-		ShortURL:    short,
+func (l *LinkService) Add(ctx context.Context, long string) (string, error) {
+	link := models.Link{
+		ShortURL:    uuid.New().String(),
 		OriginalURL: long,
 	}
-	err := l.fileProducer.WriteEvent(event)
+
+	savedLink, err := l.linksStorage.AddLink(ctx, link)
 	if err != nil {
-		return short, errors.New("write event error")
+		return savedLink.ShortURL, err
 	}
-	return short, nil
+
+	return link.ShortURL, nil
+}
+
+func (l *LinkService) AddBatch(ctx context.Context, links []models.Link) ([]models.Link, error) {
+	for i := range links {
+		links[i].ShortURL = uuid.New().String()
+	}
+	var linksSaved []models.Link
+	var err error
+
+	linksSaved, err = l.linksStorage.AddLinkBatch(ctx, links)
+	if err != nil {
+		logger.GetLogger().Error("add link batch error", zap.Error(err))
+		return linksSaved, err
+	}
+
+	return linksSaved, nil
+}
+
+func (l *LinkService) Ping(ctx context.Context) error {
+	return l.linksStorage.Ping(ctx)
 }
