@@ -62,9 +62,11 @@ func LoggerChi(logger *zap.Logger) func(next http.Handler) http.Handler {
 			duration := time.Since(start)
 
 			var cookies []string
-			for _, cookie := range rw.Header()["Set-Cookie"] {
-				cookies = append(cookies, cookie)
-			}
+			cookies = append(cookies, rw.Header()["Set-Cookie"]...)
+
+			//for _, cookie := range rw.Header()["Set-Cookie"] {
+			//	cookies = append(cookies, cookie)
+			//}
 
 			logger.Info("Outgoing response",
 				zap.Int("status", rw.Status()),

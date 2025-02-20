@@ -35,6 +35,9 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			fmt.Printf("Новая кука создана: %s\n", userID)
 			// передаем userID в контекст запроса
 			r = setUserIDToContext(r, userID)
+			// для проверки тестов
+			w.Header().Set("Authorization", fmt.Sprintf("Bearer %s", userID))
+
 		} else {
 			// проверяем
 			userID, valid := verifyCookie(cookie)
@@ -43,6 +46,8 @@ func AuthMiddleware(next http.Handler) http.Handler {
 				newCookie := createSignedCookie(userID)
 				http.SetCookie(w, &newCookie)
 				fmt.Printf("Кука не прошла проверку, новая кука создана: %s\n", userID)
+				// для проверки тестов
+				w.Header().Set("Authorization", fmt.Sprintf("Bearer %s", userID))
 			}
 			// передаем userID в контекст запроса
 			r = setUserIDToContext(r, userID)
