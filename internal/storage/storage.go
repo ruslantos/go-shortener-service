@@ -45,6 +45,7 @@ func (l LinksStorage) AddLink(ctx context.Context, link models.Link) (models.Lin
 				return link, internal_errors.ErrURLAlreadyExists
 			}
 		}
+		return link, err
 	}
 
 	return link, nil
@@ -118,7 +119,7 @@ func (l LinksStorage) Ping(ctx context.Context) error {
 	if l.db == nil {
 		return fmt.Errorf("database connection is nil")
 	}
-	err := l.db.Ping()
+	err := l.db.PingContext(ctx)
 	if err != nil {
 		logger.GetLogger().Error(err.Error())
 	}
