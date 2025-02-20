@@ -45,13 +45,15 @@ func (l LinksStorage) AddLink(ctx context.Context, link models.Link, userID stri
 				return link, internal_errors.ErrURLAlreadyExists
 			}
 		}
+		return link, err
 	}
 
 	err = l.UpdateUser(ctx, link, userID)
 	if err != nil {
+		logger.GetLogger().Error(err.Error())
 		return link, err
 	}
-
+	logger.GetLogger().Info(fmt.Sprintf("user successfully added %s", userID))
 	return link, nil
 }
 
@@ -123,7 +125,7 @@ func (l LinksStorage) Ping(ctx context.Context) error {
 	if l.db == nil {
 		return fmt.Errorf("database connection is nil")
 	}
-	err := l.db.Ping()
+	err := l.db.PingContext(ctx)
 	if err != nil {
 		logger.GetLogger().Error(err.Error())
 	}
@@ -151,8 +153,8 @@ func (l LinksStorage) InitStorage() error {
 }
 
 func (l LinksStorage) UpdateUser(ctx context.Context, link models.Link, userID string) error {
-	rows, err := l.db.QueryContext(context.Background(),
-		"INSERT INTO users  (short_url, user_id) VALUES ($1, $2)", link.ShortURL, userID)
+	rows, err := l.db.QueryContext(ctx,
+		"INSERT INTO users (short_url, user_id) VALUES ($1, $2)", link.ShortURL, userID)
 
 	if err != nil || rows.Err() != nil {
 		return err

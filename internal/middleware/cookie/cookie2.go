@@ -105,6 +105,7 @@ func generateUserID() string {
 
 // Вспомогательная функция для передачи userID в контекст запроса
 func setUserIDToContext(r *http.Request, userID string) *http.Request {
+	fmt.Printf("Кука передана в контекст: %s\n", userID)
 	ctx := context.WithValue(r.Context(), UserIDKey, userID)
 	return r.WithContext(ctx)
 }
