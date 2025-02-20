@@ -46,11 +46,6 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	//cookie, ok := r.Context().Value("cookie").(*http.Cookie)
-	//if ok {
-	//	http.SetCookie(w, cookie)
-	//}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(respStatus)
 	w.Write([]byte(config.FlagShortURL + short))
