@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/http"
-	"os"
 
 	"github.com/jmoiron/sqlx"
 
@@ -32,8 +31,6 @@ func main() {
 		panic("cannot initialize zap")
 	}
 	defer logger.Sync()
-
-	os.Setenv("GIN_MODE", "release")
 
 	config.ParseFlags()
 
