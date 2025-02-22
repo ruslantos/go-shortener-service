@@ -1,6 +1,7 @@
-package cookie
+package authheader
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
@@ -9,7 +10,7 @@ import (
 	"strings"
 )
 
-func AuthMiddleware2(next http.Handler) http.Handler {
+func AuthorizationMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		var userID string
@@ -26,9 +27,9 @@ func AuthMiddleware2(next http.Handler) http.Handler {
 			userID = generateUserID()
 			token := createSignedToken(userID)
 			w.Header().Set("Authorization", fmt.Sprintf("Bearer %s", token))
-			fmt.Printf("Новый токен создан: %s\n", userID)
+			fmt.Printf("Новый Authorization токен создан: %s\n", userID)
 		} else {
-			fmt.Printf("Токен прошел проверку: %s\n", userID)
+			fmt.Printf("Токен Authorization прошел проверку: %s\n", userID)
 		}
 
 		// передаем userID в контекст запроса
@@ -66,4 +67,10 @@ func verifyToken(token string) (string, bool) {
 	}
 
 	return userID, true
+}
+
+func setUserIDToContext(r *http.Request, userID string) *http.Request {
+	fmt.Printf("userID передан в контекст: %s\n", userID)
+	ctx := context.WithValue(r.Context(), UserIDKey, userID)
+	return r.WithContext(ctx)
 }

@@ -17,12 +17,11 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/handlers/shortenbatch"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/userurls"
 	"github.com/ruslantos/go-shortener-service/internal/links"
+	authMiddlware "github.com/ruslantos/go-shortener-service/internal/middleware/auth"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/compress"
-	"github.com/ruslantos/go-shortener-service/internal/middleware/cookie"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/storage"
 	"github.com/ruslantos/go-shortener-service/internal/storage/mapfile"
-	"github.com/ruslantos/go-shortener-service/internal/user"
 )
 
 func main() {
@@ -57,8 +56,6 @@ func main() {
 		}
 	}
 
-	userService := user.NewUserService()
-
 	var linkService links.LinkService
 
 	if config.IsDatabaseExist {
@@ -67,14 +64,14 @@ func main() {
 		if err != nil {
 			logger.GetLogger().Fatal("cannot initialize database", zap.Error(err))
 		}
-		linkService = *links.NewLinkService(linksRepo, userService)
+		linkService = *links.NewLinkService(linksRepo)
 	} else {
 		linksRepo := mapfile.NewMapLinksStorage(fileConsumer, fileProducer)
 		err = linksRepo.InitStorage()
 		if err != nil {
 			logger.GetLogger().Fatal("cannot initialize link map", zap.Error(err))
 		}
-		linkService = *links.NewLinkService(linksRepo, userService)
+		linkService = *links.NewLinkService(linksRepo)
 
 	}
 
@@ -87,7 +84,12 @@ func main() {
 
 	r := chi.NewRouter()
 
-	r.Use(compress.GzipMiddlewareWriter, compress.GzipMiddlewareReader, logger.LoggerChi(log), cookie.AuthMiddleware2, cookie.AuthMiddleware)
+	r.Use(compress.GzipMiddlewareWriter,
+		compress.GzipMiddlewareReader,
+		logger.LoggerChi(log),
+		authMiddlware.AuthorizationMiddleware,
+		authMiddlware.CookieMiddleware)
+
 	r.Post("/", postLinkHandler.Handle)
 	r.Get("/{link}", getLinkHandler.Handle)
 	r.Post("/api/shorten", shortenHandler.Handle)

@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/ruslantos/go-shortener-service/internal/config"
-	"github.com/ruslantos/go-shortener-service/internal/middleware/cookie"
+	auth "github.com/ruslantos/go-shortener-service/internal/middleware/auth"
 	"github.com/ruslantos/go-shortener-service/internal/models"
 )
 
@@ -24,7 +24,7 @@ func New(linksService linksService) *Handler {
 }
 
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
-	_, ok := r.Context().Value(cookie.UserIDKey).(string)
+	_, ok := r.Context().Value(auth.UserIDKey).(string)
 	if !ok {
 		http.Error(w, "user not found", http.StatusUnauthorized)
 		return

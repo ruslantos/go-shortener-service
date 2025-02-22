@@ -47,7 +47,7 @@ func (l *LinksStorage) AddLink(ctx context.Context, link models.Link, userID str
 	return link, nil
 }
 
-func (l *LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link) ([]models.Link, error) {
+func (l *LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link, userID string) ([]models.Link, error) {
 	l.addLinksToMap(links)
 
 	for _, link := range links {

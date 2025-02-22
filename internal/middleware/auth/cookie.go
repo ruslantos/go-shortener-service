@@ -1,7 +1,6 @@
-package cookie
+package authheader
 
 import (
-	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
@@ -21,7 +20,7 @@ const (
 	UserIDKey contextKey = "userID"
 )
 
-func AuthMiddleware(next http.Handler) http.Handler {
+func CookieMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("user")
 		if err != nil || cookie == nil {
@@ -33,10 +32,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			newCookie := createSignedCookie(userID)
 			http.SetCookie(w, &newCookie)
 			fmt.Printf("Новая кука создана: %s\n", userID)
-			// передаем userID в контекст запроса
-			//r = setUserIDToContext(r, userID)
-			// для проверки тестов
-			//w.Header().Set("Authorization", fmt.Sprintf("Bearer %s", userID))
+			// не передаю в контекст тк userID передается из Authorization хэдера
 
 		} else {
 			// проверяем
@@ -46,11 +42,8 @@ func AuthMiddleware(next http.Handler) http.Handler {
 				newCookie := createSignedCookie(userID)
 				http.SetCookie(w, &newCookie)
 				fmt.Printf("Кука не прошла проверку, новая кука создана: %s\n", userID)
-				// для проверки тестов
-				//w.Header().Set("Authorization", fmt.Sprintf("Bearer %s", userID))
 			}
-			// передаем userID в контекст запроса
-			//r = setUserIDToContext(r, userID)
+			// не передаю в контекст тк userID передается из Authorization хэдера
 		}
 
 		next.ServeHTTP(w, r)
@@ -98,10 +91,4 @@ func verifyCookie(cookie *http.Cookie) (string, bool) {
 
 func generateUserID() string {
 	return fmt.Sprintf("%d", time.Now().UnixNano())
-}
-
-func setUserIDToContext(r *http.Request, userID string) *http.Request {
-	fmt.Printf("Кука передана в контекст: %s\n", userID)
-	ctx := context.WithValue(r.Context(), UserIDKey, userID)
-	return r.WithContext(ctx)
 }

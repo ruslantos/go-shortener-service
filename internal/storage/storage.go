@@ -48,16 +48,17 @@ func (l LinksStorage) AddLink(ctx context.Context, link models.Link, userID stri
 		return link, err
 	}
 
-	err = l.UpdateUser(ctx, link, userID)
+	// обновляем пользователя
+	err = l.UpdateUser(ctx, []models.Link{link}, userID)
 	if err != nil {
 		logger.GetLogger().Error(err.Error())
 		return link, err
 	}
-	logger.GetLogger().Info(fmt.Sprintf("user successfully added %s", userID))
+	logger.GetLogger().Info(fmt.Sprintf("user successfully added in DB %s", userID))
 	return link, nil
 }
 
-func (l LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link) ([]models.Link, error) {
+func (l LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link, userID string) ([]models.Link, error) {
 	tx, err := l.db.Begin()
 	if err != nil {
 		return nil, err
@@ -104,6 +105,15 @@ func (l LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link) ([]
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
+
+	// обновляем пользователя
+	err = l.UpdateUser(ctx, links, userID)
+	if err != nil {
+		logger.GetLogger().Error(err.Error())
+		return links, err
+	}
+	logger.GetLogger().Info(fmt.Sprintf("user successfully added in DB %s", userID))
+
 	return links, errorDB
 }
 
@@ -152,12 +162,34 @@ func (l LinksStorage) InitStorage() error {
 	return nil
 }
 
-func (l LinksStorage) UpdateUser(ctx context.Context, link models.Link, userID string) error {
-	rows, err := l.db.QueryContext(ctx,
-		"INSERT INTO users (short_url, user_id) VALUES ($1, $2)", link.ShortURL, userID)
+func (l LinksStorage) UpdateUser(ctx context.Context, links []models.Link, userID string) error {
+	if len(links) == 0 {
+		return nil
+	}
 
-	if err != nil || rows.Err() != nil {
+	tx, err := l.db.Begin()
+	if err != nil {
 		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		} else {
+			err = tx.Commit()
+		}
+	}()
+
+	stmt, err := tx.PrepareContext(ctx, "INSERT INTO users (short_url, user_id) VALUES ($1, $2)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, link := range links {
+		_, err = stmt.ExecContext(ctx, link.ShortURL, userID)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
