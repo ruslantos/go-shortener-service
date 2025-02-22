@@ -26,7 +26,7 @@ func NewLinksStorage(db *sqlx.DB) *LinksStorage {
 	}
 }
 
-func (l LinksStorage) AddLink(ctx context.Context, link models.Link) (models.Link, error) {
+func (l LinksStorage) AddLink(ctx context.Context, link models.Link, userID string) (models.Link, error) {
 	rows, err := l.db.QueryContext(context.Background(),
 		"INSERT INTO links  (short_url, original_url) VALUES ($1, $2)", link.ShortURL, link.OriginalURL)
 	if err != nil || rows.Err() != nil {
@@ -48,10 +48,17 @@ func (l LinksStorage) AddLink(ctx context.Context, link models.Link) (models.Lin
 		return link, err
 	}
 
+	// обновляем пользователя
+	err = l.UpdateUser(ctx, []models.Link{link}, userID)
+	if err != nil {
+		logger.GetLogger().Error(err.Error())
+		return link, err
+	}
+	logger.GetLogger().Info(fmt.Sprintf("user successfully added in DB %s", userID))
 	return link, nil
 }
 
-func (l LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link) ([]models.Link, error) {
+func (l LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link, userID string) ([]models.Link, error) {
 	tx, err := l.db.Begin()
 	if err != nil {
 		return nil, err
@@ -98,6 +105,15 @@ func (l LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link) ([]
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
+
+	// обновляем пользователя
+	err = l.UpdateUser(ctx, links, userID)
+	if err != nil {
+		logger.GetLogger().Error(err.Error())
+		return links, err
+	}
+	logger.GetLogger().Info(fmt.Sprintf("user successfully added in DB %s", userID))
+
 	return links, errorDB
 }
 
@@ -136,5 +152,69 @@ func (l LinksStorage) InitStorage() error {
 		return err
 	}
 
+	_, err = l.db.ExecContext(context.Background(),
+		`CREATE TABLE IF NOT EXISTS users(short_url TEXT,user_id TEXT);`)
+	if err != nil {
+		logger.GetLogger().Error(err.Error())
+		return err
+	}
+
 	return nil
+}
+
+func (l LinksStorage) UpdateUser(ctx context.Context, links []models.Link, userID string) error {
+	if len(links) == 0 {
+		return nil
+	}
+
+	tx, err := l.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		} else {
+			err = tx.Commit()
+		}
+	}()
+
+	stmt, err := tx.PrepareContext(ctx, "INSERT INTO users (short_url, user_id) VALUES ($1, $2)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, link := range links {
+		_, err = stmt.ExecContext(ctx, link.ShortURL, userID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (l LinksStorage) GetUserLinks(ctx context.Context, userID string) ([]models.Link, error) {
+	var links []models.Link
+	rows, err := l.db.QueryContext(ctx,
+		"SELECT l.short_url, l.original_url FROM links l JOIN users u ON l.short_url = u.short_url WHERE u.user_id = $1", userID)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var link models.Link
+		err := rows.Scan(&link.ShortURL, &link.OriginalURL)
+		if err != nil {
+			return nil, err
+		}
+		links = append(links, link)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return links, nil
 }
