@@ -43,6 +43,7 @@ func CookieMiddleware(next http.Handler) http.Handler {
 				http.SetCookie(w, &newCookie)
 				fmt.Printf("Кука не прошла проверку, новая кука создана: %s\n", userID)
 			}
+			fmt.Printf("В запросе валидная кука: %s\n", userID)
 			// не передаю в контекст тк userID передается из Authorization хэдера
 		}
 
