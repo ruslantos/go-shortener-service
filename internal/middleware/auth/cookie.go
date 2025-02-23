@@ -8,6 +8,10 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"go.uber.org/zap"
+
+	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 )
 
 var (
@@ -25,15 +29,14 @@ func CookieMiddleware(next http.Handler) http.Handler {
 		cookie, err := r.Cookie("user")
 		if err != nil || cookie == nil {
 			if cookie == nil {
-				fmt.Println("Кука отсутствует в запросе")
+				logger.GetLogger().Info("Кука отсутствует в запросе")
 			}
 			// создаем новую
 			userID := generateUserID()
 			newCookie := createSignedCookie(userID)
 			http.SetCookie(w, &newCookie)
-			fmt.Printf("Новая кука создана: %s\n", userID)
+			logger.GetLogger().Info("Новая кука создана", zap.String("userID", userID))
 			// не передаю в контекст тк userID передается из Authorization хэдера
-
 		} else {
 			// проверяем
 			userID, valid := verifyCookie(cookie)
@@ -41,9 +44,10 @@ func CookieMiddleware(next http.Handler) http.Handler {
 				userID = generateUserID()
 				newCookie := createSignedCookie(userID)
 				http.SetCookie(w, &newCookie)
-				fmt.Printf("Кука не прошла проверку, новая кука создана: %s\n", userID)
+				logger.GetLogger().Info("Кука не прошла проверку, новая кука создана", zap.String("userID", userID))
+
 			}
-			fmt.Printf("В запросе валидная кука: %s\n", userID)
+			logger.GetLogger().Info("В запросе валидная кука", zap.String("userID", userID))
 			// не передаю в контекст тк userID передается из Authorization хэдера
 		}
 

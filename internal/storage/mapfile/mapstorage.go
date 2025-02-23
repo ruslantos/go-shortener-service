@@ -61,7 +61,8 @@ func (l *LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link, us
 
 func (l *LinksStorage) GetLink(ctx context.Context, value string) (models.Link, bool, error) {
 	result, ok := l.linksMap[value]
-	return models.Link{OriginalURL: result.OriginalURL}, ok, nil
+	link := models.Link{OriginalURL: result.OriginalURL}
+	return link, ok, nil
 }
 
 func (l *LinksStorage) addLinksToMap(links []models.Link) {

@@ -42,7 +42,7 @@ func (l *LinkService) Get(ctx context.Context, shortLink string) (string, error)
 	if v.IsDeleted != nil && *v.IsDeleted {
 		return "", errors2.ErrURLDeleted
 	}
-	return v.ShortURL, nil
+	return v.OriginalURL, nil
 }
 
 func (l *LinkService) Add(ctx context.Context, long string) (string, error) {
