@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
+	errors2 "github.com/ruslantos/go-shortener-service/internal/errors"
 	auth "github.com/ruslantos/go-shortener-service/internal/middleware/auth"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/models"
@@ -14,7 +15,7 @@ import (
 
 type linksStorage interface {
 	AddLink(ctx context.Context, link models.Link, userID string) (models.Link, error)
-	GetLink(ctx context.Context, value string) (string, bool, error)
+	GetLink(ctx context.Context, value string) (models.Link, bool, error)
 	Ping(ctx context.Context) error
 	AddLinkBatch(ctx context.Context, links []models.Link, userID string) ([]models.Link, error)
 	GetUserLinks(ctx context.Context, userID string) ([]models.Link, error)
@@ -36,9 +37,12 @@ func (l *LinkService) Get(ctx context.Context, shortLink string) (string, error)
 		return "", err
 	}
 	if !ok {
-		return v, errors.New("link not found")
+		return v.ShortURL, errors.New("link not found")
 	}
-	return v, nil
+	if v.IsDeleted != nil && *v.IsDeleted {
+		return "", errors2.ErrURLDeleted
+	}
+	return v.ShortURL, nil
 }
 
 func (l *LinkService) Add(ctx context.Context, long string) (string, error) {

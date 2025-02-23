@@ -2,9 +2,12 @@ package getlink
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
+
+	internal_errors "github.com/ruslantos/go-shortener-service/internal/errors"
 )
 
 type linksService interface {
@@ -24,6 +27,11 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 
 	long, err := h.linksService.Get(r.Context(), strings.Replace(q, "/", "", 1))
 	if err != nil {
+		// ссылка удалена
+		if errors.Is(err, internal_errors.ErrURLDeleted) {
+			w.WriteHeader(http.StatusGone)
+			return
+		}
 		http.Error(w, fmt.Sprintf("failed to get long link: %s", err.Error()), http.StatusBadRequest)
 		return
 	}
