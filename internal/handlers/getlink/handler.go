@@ -27,12 +27,6 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("failed to get long link: %s", err.Error()), http.StatusBadRequest)
 		return
 	}
-	//userID, ok := r.Context().Value("userID").(string)
-	//if !ok {
-	//	http.Error(w, "missing userID", http.StatusBadRequest)
-	//	return
-	//}
-	//fmt.Print(userID)
 
 	w.Header().Add("Location", long)
 	w.WriteHeader(http.StatusTemporaryRedirect)

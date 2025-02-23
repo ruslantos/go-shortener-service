@@ -10,16 +10,18 @@ import (
 
 	"github.com/ruslantos/go-shortener-service/internal/config"
 	fileClient "github.com/ruslantos/go-shortener-service/internal/files"
+	"github.com/ruslantos/go-shortener-service/internal/handlers/deleteuserurls"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/getlink"
+	"github.com/ruslantos/go-shortener-service/internal/handlers/getuserurls"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/ping"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/postlink"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/shorten"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/shortenbatch"
-	"github.com/ruslantos/go-shortener-service/internal/handlers/userurls"
 	"github.com/ruslantos/go-shortener-service/internal/links"
 	authMiddlware "github.com/ruslantos/go-shortener-service/internal/middleware/auth"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/compress"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
+	"github.com/ruslantos/go-shortener-service/internal/queue"
 	"github.com/ruslantos/go-shortener-service/internal/storage"
 	"github.com/ruslantos/go-shortener-service/internal/storage/mapfile"
 )
@@ -57,6 +59,7 @@ func main() {
 	}
 
 	var linkService links.LinkService
+	var queueService queue.QueueService
 
 	if config.IsDatabaseExist {
 		linksRepo := storage.NewLinksStorage(db)
@@ -65,6 +68,7 @@ func main() {
 			logger.GetLogger().Fatal("cannot initialize database", zap.Error(err))
 		}
 		linkService = *links.NewLinkService(linksRepo)
+		queueService = *queue.NewQueueService(linksRepo)
 	} else {
 		linksRepo := mapfile.NewMapLinksStorage(fileConsumer, fileProducer)
 		err = linksRepo.InitStorage()
@@ -80,7 +84,8 @@ func main() {
 	shortenHandler := shorten.New(&linkService)
 	pingHandler := ping.New(&linkService)
 	shortenBatchHandler := shortenbatch.New(&linkService)
-	userurlsHandler := userurls.New(&linkService)
+	getUserUrlsHandler := getuserurls.New(&linkService)
+	deleteUserUrlsHandler := deleteuserurls.New(&queueService)
 
 	r := chi.NewRouter()
 
@@ -95,7 +100,8 @@ func main() {
 	r.Post("/api/shorten", shortenHandler.Handle)
 	r.Get("/ping", pingHandler.Handle)
 	r.Post("/api/shorten/batch", shortenBatchHandler.Handle)
-	r.Get("/api/user/urls", userurlsHandler.Handle)
+	r.Get("/api/user/urls", getUserUrlsHandler.Handle)
+	r.Delete("/api/user/urls", deleteUserUrlsHandler.Handle)
 
 	err = http.ListenAndServe(config.FlagServerPort, r)
 	if err != nil {

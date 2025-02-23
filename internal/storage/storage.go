@@ -145,7 +145,7 @@ func (l LinksStorage) Ping(ctx context.Context) error {
 
 func (l LinksStorage) InitStorage() error {
 	_, err := l.db.ExecContext(context.Background(),
-		`CREATE TABLE IF NOT EXISTS links(short_url TEXT,original_url TEXT, correlation_id TEXT);
+		`CREATE TABLE IF NOT EXISTS links(short_url TEXT,original_url TEXT, correlation_id TEXT, is_deleted BOOLEAN);
 				CREATE UNIQUE INDEX IF NOT EXISTS idx_original_url ON links(original_url);`)
 	if err != nil {
 		logger.GetLogger().Error(err.Error())
@@ -217,4 +217,8 @@ func (l LinksStorage) GetUserLinks(ctx context.Context, userID string) ([]models
 	}
 
 	return links, nil
+}
+
+func (l LinksStorage) DeleteUserUrls(ctx context.Context, ids []string, userID string) error {
+	return nil
 }

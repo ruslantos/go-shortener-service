@@ -1,4 +1,4 @@
-package userurls
+package getuserurls
 
 import (
 	"context"

@@ -1,4 +1,4 @@
-package userurls
+package getuserurls
 
 type UserURLsResponse []UserURLs
 
