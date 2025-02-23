@@ -220,5 +220,34 @@ func (l LinksStorage) GetUserLinks(ctx context.Context, userID string) ([]models
 }
 
 func (l LinksStorage) DeleteUserUrls(ctx context.Context, ids []string, userID string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+
+	tx, err := l.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		} else {
+			err = tx.Commit()
+		}
+	}()
+
+	stmt, err := tx.PrepareContext(ctx, "UPDATE links SET is_deleted = true FROM links l JOIN users u ON l.short_url = u.short_url WHERE l.short_url = $1 AND u.user_id = $2")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, id := range ids {
+		_, err = stmt.ExecContext(ctx, id, userID)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
