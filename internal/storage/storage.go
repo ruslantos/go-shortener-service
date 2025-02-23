@@ -122,7 +122,7 @@ func (l LinksStorage) GetLink(ctx context.Context, value string) (models.Link, b
 		"SELECT original_url, is_deleted FROM links where short_url = $1 LIMIT 1", value)
 	var linkDB models.Link
 	var isDeleted sql.NullBool
-	err := row.Scan(&linkDB.ShortURL, &isDeleted)
+	err := row.Scan(&linkDB.OriginalURL, &isDeleted)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return linkDB, false, nil
