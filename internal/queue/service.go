@@ -11,8 +11,8 @@ import (
 )
 
 type linksStorage interface {
-	DeleteUserUrls(ctx context.Context, ids [][]string, userID string) error
-	DeleteUserUrl(ctx context.Context, id string, userID string) error
+	DeleteUserURLs(ctx context.Context, ids [][]string, userID string) error
+	DeleteUserURL(ctx context.Context, id string, userID string) error
 }
 
 type inChan chan []string
@@ -35,7 +35,7 @@ func NewQueueService(linksStorage linksStorage, inChan inChan, doneChan doneChan
 func (q *QueueService) DeleteUserUrls(ctx context.Context, ids []string) error {
 	userID := getUserIDFromContext(ctx)
 	logger.GetLogger().Info("got deleted user urls", zap.Strings("ids", ids))
-	//return q.linksStorage.DeleteUserUrls(ctx, ids, userID)
+	//return q.linksStorage.DeleteUserURLs(ctx, ids, userID)
 
 	// канал с данными
 	inputCh := generator(q.doneChan, ids)
@@ -54,7 +54,7 @@ func (q *QueueService) DeleteUserUrls(ctx context.Context, ids []string) error {
 	//for id := range resultCh {
 	//	idsToDelete = append(idsToDelete, id)
 	//}
-	//return q.linksStorage.DeleteUserUrls(ctx, idsToDelete, userID)
+	//return q.linksStorage.DeleteUserURLs(ctx, idsToDelete, userID)
 	return nil
 }
 
@@ -63,7 +63,7 @@ func getUserIDFromContext(ctx context.Context) string {
 	if !ok {
 		return ""
 	}
-	logger.GetLogger().Info("get userID", zap.String("userID", userID))
+	//logger.GetLogger().Info("get userID", zap.String("userID", userID))
 	return userID
 }
 
@@ -150,7 +150,7 @@ func fanIn(doneCh chan struct{}, resultChs ...chan []string) chan []string {
 func (q *QueueService) markAsDeleted(ctx context.Context, inputCh chan string, userID string) error {
 	var errs error
 	for URL := range inputCh {
-		err := q.linksStorage.DeleteUserUrl(ctx, URL, userID)
+		err := q.linksStorage.DeleteUserURL(ctx, URL, userID)
 		if err != nil {
 			errs = err
 		}

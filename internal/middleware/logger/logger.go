@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"net/http"
 	"sync"
-	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -48,7 +47,7 @@ func (rw *responseWriter) Status() int {
 func LoggerChi(logger *zap.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			start := time.Now()
+			//start := time.Now()
 
 			rw := &responseWriter{ResponseWriter: w, body: &bytes.Buffer{}}
 
@@ -59,7 +58,7 @@ func LoggerChi(logger *zap.Logger) func(next http.Handler) http.Handler {
 
 			next.ServeHTTP(rw, r)
 
-			duration := time.Since(start)
+			//duration := time.Since(start)
 
 			var cookies []string
 			cookies = append(cookies, rw.Header()["Set-Cookie"]...)
@@ -68,13 +67,13 @@ func LoggerChi(logger *zap.Logger) func(next http.Handler) http.Handler {
 			//	cookies = append(cookies, auth)
 			//}
 
-			logger.Info("Outgoing response",
-				zap.Int("status", rw.Status()),
-				zap.Duration("duration", duration),
-				zap.Int("response_size", rw.Size()),
-				zap.String("response_body", rw.body.String()),
-				zap.Strings("cookies", cookies),
-			)
+			//logger.Info("Outgoing response",
+			//	zap.Int("status", rw.Status()),
+			//	zap.Duration("duration", duration),
+			//	zap.Int("response_size", rw.Size()),
+			//	zap.String("response_body", rw.body.String()),
+			//	zap.Strings("cookies", cookies),
+			//)
 		})
 	}
 }
