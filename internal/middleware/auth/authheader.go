@@ -8,10 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-
-	"go.uber.org/zap"
-
-	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 )
 
 func AuthorizationMiddleware(next http.Handler) http.Handler {
@@ -31,9 +27,9 @@ func AuthorizationMiddleware(next http.Handler) http.Handler {
 			userID = generateUserID()
 			token := createSignedToken(userID)
 			w.Header().Set("Authorization", fmt.Sprintf("Bearer %s", token))
-			logger.GetLogger().Info("Новый Authorization токен создан", zap.String("userID", userID))
+			//logger.GetLogger().Info("Новый Authorization токен создан", zap.String("userID", userID))
 		} else {
-			fmt.Printf("Токен Authorization прошел проверку: %s\n", userID)
+			//fmt.Printf("Токен Authorization прошел проверку: %s\n", userID)
 		}
 
 		// передаем userID в контекст запроса
@@ -74,7 +70,7 @@ func verifyToken(token string) (string, bool) {
 }
 
 func setUserIDToContext(r *http.Request, userID string) *http.Request {
-	logger.GetLogger().Info("userID передан в контекст", zap.String("userID", userID))
+	//logger.GetLogger().Info("userID передан в контекст", zap.String("userID", userID))
 	ctx := context.WithValue(r.Context(), UserIDKey, userID)
 	return r.WithContext(ctx)
 }

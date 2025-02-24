@@ -61,6 +61,12 @@ func main() {
 	var linkService links.LinkService
 	var queueService queue.QueueService
 
+	deleteIDCh := make(chan []string)
+	// сигнальный канал для завершения горутин
+	doneCh := make(chan struct{})
+	// закрываем его при завершении программы
+	defer close(doneCh)
+
 	if config.IsDatabaseExist {
 		linksRepo := storage.NewLinksStorage(db)
 		err = linksRepo.InitStorage()
@@ -68,7 +74,7 @@ func main() {
 			logger.GetLogger().Fatal("cannot initialize database", zap.Error(err))
 		}
 		linkService = *links.NewLinkService(linksRepo)
-		queueService = *queue.NewQueueService(linksRepo)
+		queueService = *queue.NewQueueService(linksRepo, deleteIDCh, doneCh)
 	} else {
 		linksRepo := mapfile.NewMapLinksStorage(fileConsumer, fileProducer)
 		err = linksRepo.InitStorage()

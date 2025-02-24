@@ -224,8 +224,17 @@ func (l LinksStorage) GetUserLinks(ctx context.Context, userID string) ([]models
 	return links, nil
 }
 
-func (l LinksStorage) DeleteUserUrls(ctx context.Context, ids []string, userID string) error {
+func (l LinksStorage) DeleteUserUrls(ctx context.Context, ids [][]string, userID string) error {
 	if len(ids) == 0 {
+		return nil
+	}
+
+	var flatIDs []string
+	for _, idSlice := range ids {
+		flatIDs = append(flatIDs, idSlice...)
+	}
+
+	if len(flatIDs) == 0 {
 		return nil
 	}
 
@@ -247,7 +256,7 @@ func (l LinksStorage) DeleteUserUrls(ctx context.Context, ids []string, userID s
 	}
 	defer stmt.Close()
 
-	for _, id := range ids {
+	for _, id := range flatIDs {
 		_, err = stmt.ExecContext(ctx, id, userID)
 		if err != nil {
 			return err
@@ -255,4 +264,9 @@ func (l LinksStorage) DeleteUserUrls(ctx context.Context, ids []string, userID s
 	}
 
 	return nil
+}
+
+func (l LinksStorage) DeleteUserUrl(ctx context.Context, id string, userID string) error {
+	_, err := l.db.ExecContext(ctx, `UPDATE links SET is_deleted = true FROM links l JOIN users u ON l.short_url = u.short_url WHERE l.short_url = $1 AND u.user_id = $2`, id, userID)
+	return err
 }
