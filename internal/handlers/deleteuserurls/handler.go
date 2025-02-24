@@ -49,13 +49,11 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusAccepted)
-
 	err = h.queue.DeleteUserUrls(r.Context(), body)
 	if err != nil {
 		logger.GetLogger().Error("delete user urls error", zap.Error(err))
 	}
-
+	w.WriteHeader(http.StatusAccepted)
 	//w.Header().Set("Content-Type", "application/json")
 	//w.Write(result)
 }
