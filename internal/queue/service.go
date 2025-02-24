@@ -149,11 +149,22 @@ func fanIn(doneCh chan struct{}, resultChs ...chan []string) chan []string {
 
 func (q *QueueService) markAsDeleted(ctx context.Context, inputCh chan string, userID string) error {
 	var errs error
+	var wg sync.WaitGroup
+
 	for URL := range inputCh {
-		err := q.linksStorage.DeleteUserURL(ctx, URL, userID)
-		if err != nil {
-			errs = err
-		}
+		wg.Add(1)
+		go func(URL string) {
+			defer wg.Done()
+			err := q.linksStorage.DeleteUserURL(ctx, URL, userID)
+			if err != nil {
+				errs = err
+			}
+			logger.GetLogger().Info("deleted url", zap.String("url", URL))
+		}(URL)
 	}
-	return errs
+	wg.Wait()
+	if errs != nil {
+		return errs
+	}
+	return nil
 }
