@@ -3,6 +3,7 @@ package links
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -19,15 +20,23 @@ type linksStorage interface {
 	Ping(ctx context.Context) error
 	AddLinkBatch(ctx context.Context, links []models.Link, userID string) ([]models.Link, error)
 	GetUserLinks(ctx context.Context, userID string) ([]models.Link, error)
+	DeleteUserURLs(ctx context.Context, urls []DeletedURLs) error
 }
 
 type LinkService struct {
 	linksStorage linksStorage
+	deleteChan   chan DeletedURLs
+}
+
+type DeletedURLs struct {
+	URLs   []string
+	UserID string
 }
 
 func NewLinkService(linksStorage linksStorage) *LinkService {
 	return &LinkService{
 		linksStorage: linksStorage,
+		deleteChan:   make(chan DeletedURLs, 100),
 	}
 }
 
@@ -99,4 +108,49 @@ func getUserIDFromContext(ctx context.Context) string {
 	}
 	//logger.GetLogger().Info("get userID", zap.String("userID", userID))
 	return userID
+}
+
+func (l *LinkService) DeleteWorker(ctx context.Context) {
+	logger.GetLogger().Info("start delete worker")
+
+	var buffer []DeletedURLs
+	timer := time.NewTicker(10 * time.Second)
+	defer timer.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			// Если контекст завершен, выполняем финальное удаление оставшихся URL-ов
+			if len(buffer) > 0 {
+				err := l.linksStorage.DeleteUserURLs(ctx, buffer)
+				if err != nil {
+					logger.GetLogger().Error("delete urls from db error", zap.Error(err))
+				}
+			}
+
+		case data := <-l.deleteChan:
+			buffer = append(buffer, data)
+			if len(buffer) >= 10 {
+				err := l.linksStorage.DeleteUserURLs(ctx, buffer)
+				if err != nil {
+					logger.GetLogger().Error("delete urls from db error", zap.Error(err))
+				}
+				buffer = nil // Очищаем буфер
+			}
+
+		case <-timer.C:
+			if len(buffer) > 0 {
+				logger.GetLogger().Info("timer expired, deleting urls from db")
+				err := l.linksStorage.DeleteUserURLs(ctx, buffer)
+				if err != nil {
+					logger.GetLogger().Error("delete urls from db error", zap.Error(err))
+				}
+				buffer = nil // Очищаем буфер
+			}
+		}
+	}
+}
+
+func (l *LinkService) HandleUrls(data DeletedURLs) {
+	l.deleteChan <- data
 }

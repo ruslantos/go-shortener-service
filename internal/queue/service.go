@@ -11,7 +11,7 @@ import (
 )
 
 type linksStorage interface {
-	DeleteUserURLs(ctx context.Context, ids [][]string, userID string) error
+	DeleteUserURLs(ctx context.Context, ids []string, userID string) error
 	DeleteUserURL(ctx context.Context, id string, userID string) error
 }
 

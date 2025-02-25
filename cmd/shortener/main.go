@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/jmoiron/sqlx"
@@ -21,7 +22,6 @@ import (
 	authMiddlware "github.com/ruslantos/go-shortener-service/internal/middleware/auth"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/compress"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
-	"github.com/ruslantos/go-shortener-service/internal/queue"
 	"github.com/ruslantos/go-shortener-service/internal/storage"
 	"github.com/ruslantos/go-shortener-service/internal/storage/mapfile"
 )
@@ -59,13 +59,7 @@ func main() {
 	}
 
 	var linkService links.LinkService
-	var queueService queue.QueueService
-
-	deleteIDCh := make(chan string)
-	// сигнальный канал для завершения горутин
-	doneCh := make(chan struct{})
-	// закрываем его при завершении программы
-	defer close(doneCh)
+	//var queueService queue.QueueService
 
 	if config.IsDatabaseExist {
 		linksRepo := storage.NewLinksStorage(db)
@@ -74,7 +68,8 @@ func main() {
 			logger.GetLogger().Fatal("cannot initialize database", zap.Error(err))
 		}
 		linkService = *links.NewLinkService(linksRepo)
-		queueService = *queue.NewQueueService(linksRepo, deleteIDCh, doneCh)
+		go linkService.DeleteWorker(context.Background())
+		//queueService = *queue.NewQueueService(linksRepo, deleteIDCh, doneCh)
 	} else {
 		linksRepo := mapfile.NewMapLinksStorage(fileConsumer, fileProducer)
 		err = linksRepo.InitStorage()
@@ -91,7 +86,7 @@ func main() {
 	pingHandler := ping.New(&linkService)
 	shortenBatchHandler := shortenbatch.New(&linkService)
 	getUserUrlsHandler := getuserurls.New(&linkService)
-	deleteUserUrlsHandler := deleteuserurls.New(&queueService)
+	deleteUserUrlsHandler := deleteuserurls.New(&linkService)
 
 	r := chi.NewRouter()
 

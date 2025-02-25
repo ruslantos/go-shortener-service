@@ -8,6 +8,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 
 	fileJob "github.com/ruslantos/go-shortener-service/internal/files"
+	"github.com/ruslantos/go-shortener-service/internal/links"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/models"
 )
@@ -105,4 +106,8 @@ func (l LinksStorage) Ping(context.Context) error {
 
 func (l *LinksStorage) GetUserLinks(ctx context.Context, userID string) ([]models.Link, error) {
 	return nil, nil
+}
+
+func (l *LinksStorage) DeleteUserURLs(ctx context.Context, urls []links.DeletedURLs) error {
+	return nil
 }

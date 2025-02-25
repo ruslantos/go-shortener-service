@@ -6,22 +6,20 @@ import (
 	"io"
 	"net/http"
 
-	"go.uber.org/zap"
-
+	"github.com/ruslantos/go-shortener-service/internal/links"
 	auth "github.com/ruslantos/go-shortener-service/internal/middleware/auth"
-	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 )
 
-type queue interface {
-	DeleteUserUrls(ctx context.Context, ids []string) error
+type service interface {
+	HandleUrls(data links.DeletedURLs)
 }
 
 type Handler struct {
-	queue queue
+	service service
 }
 
-func New(queue queue) *Handler {
-	return &Handler{queue: queue}
+func New(service service) *Handler {
+	return &Handler{service: service}
 }
 
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
@@ -49,11 +47,23 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.queue.DeleteUserUrls(r.Context(), body)
-	if err != nil {
-		logger.GetLogger().Error("delete user urls error", zap.Error(err))
+	userID := getUserIDFromContext(r.Context())
+	urls := links.DeletedURLs{
+		URLs:   body,
+		UserID: userID,
 	}
+	h.service.HandleUrls(urls)
+
 	w.WriteHeader(http.StatusAccepted)
 	//w.Header().Set("Content-Type", "application/json")
 	//w.Write(result)
+}
+
+func getUserIDFromContext(ctx context.Context) string {
+	userID, ok := ctx.Value(auth.UserIDKey).(string)
+	if !ok {
+		return ""
+	}
+	//logger.GetLogger().Info("get userID", zap.String("userID", userID))
+	return userID
 }

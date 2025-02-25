@@ -12,6 +12,7 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	internal_errors "github.com/ruslantos/go-shortener-service/internal/errors"
+	"github.com/ruslantos/go-shortener-service/internal/links"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/models"
 )
@@ -225,17 +226,8 @@ func (l LinksStorage) GetUserLinks(ctx context.Context, userID string) ([]models
 	return links, nil
 }
 
-func (l LinksStorage) DeleteUserURLs(ctx context.Context, ids [][]string, userID string) error {
-	if len(ids) == 0 {
-		return nil
-	}
-
-	var flatIDs []string
-	for _, idSlice := range ids {
-		flatIDs = append(flatIDs, idSlice...)
-	}
-
-	if len(flatIDs) == 0 {
+func (l LinksStorage) DeleteUserURLs(ctx context.Context, urls []links.DeletedURLs) error {
+	if len(urls) == 0 {
 		return nil
 	}
 
@@ -252,16 +244,20 @@ func (l LinksStorage) DeleteUserURLs(ctx context.Context, ids [][]string, userID
 	}()
 
 	//stmt, err := tx.PrepareContext(ctx, "UPDATE links SET is_deleted = true FROM links l JOIN users u ON l.short_url = u.short_url WHERE l.short_url = $1 AND u.user_id = $2")
-	stmt, err := tx.PrepareContext(ctx, "UPDATE links SET is_deleted = true WHERE short_url = $1 AND user_id = $2")
+	//stmt, err := tx.PrepareContext(ctx, "UPDATE links SET is_deleted = true WHERE short_url = $1 AND user_id = $2")
+	stmt, err := tx.PrepareContext(ctx, "UPDATE links SET is_deleted = true WHERE short_url = $1")
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	for _, id := range flatIDs {
-		_, err = stmt.ExecContext(ctx, id, userID)
-		if err != nil {
-			return err
+	for _, deletedURL := range urls {
+		for _, url := range deletedURL.URLs {
+			//_, err = stmt.ExecContext(ctx, url, deletedURL.UserID)
+			_, err = stmt.ExecContext(ctx, url)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
