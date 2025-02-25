@@ -59,7 +59,6 @@ func main() {
 	}
 
 	var linkService links.LinkService
-	//var queueService queue.QueueService
 
 	if config.IsDatabaseExist {
 		linksRepo := storage.NewLinksStorage(db)
@@ -68,8 +67,8 @@ func main() {
 			logger.GetLogger().Fatal("cannot initialize database", zap.Error(err))
 		}
 		linkService = *links.NewLinkService(linksRepo)
-		go linkService.DeleteWorker(context.Background())
-		//queueService = *queue.NewQueueService(linksRepo, deleteIDCh, doneCh)
+		// запускаем воркер удаления ссылок
+		go linkService.StartDeleteWorker(context.Background())
 	} else {
 		linksRepo := mapfile.NewMapLinksStorage(fileConsumer, fileProducer)
 		err = linksRepo.InitStorage()

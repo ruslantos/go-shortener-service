@@ -101,16 +101,7 @@ func (l *LinkService) GetUserUrls(ctx context.Context) ([]models.Link, error) {
 	return v, nil
 }
 
-func getUserIDFromContext(ctx context.Context) string {
-	userID, ok := ctx.Value(auth.UserIDKey).(string)
-	if !ok {
-		return ""
-	}
-	//logger.GetLogger().Info("get userID", zap.String("userID", userID))
-	return userID
-}
-
-func (l *LinkService) DeleteWorker(ctx context.Context) {
+func (l *LinkService) StartDeleteWorker(ctx context.Context) {
 	logger.GetLogger().Info("start delete worker")
 
 	var buffer []DeletedURLs
@@ -151,6 +142,15 @@ func (l *LinkService) DeleteWorker(ctx context.Context) {
 	}
 }
 
-func (l *LinkService) HandleUrls(data DeletedURLs) {
+func (l *LinkService) ConsumeDeleteURLs(data DeletedURLs) {
 	l.deleteChan <- data
+}
+
+func getUserIDFromContext(ctx context.Context) string {
+	userID, ok := ctx.Value(auth.UserIDKey).(string)
+	if !ok {
+		return ""
+	}
+	//logger.GetLogger().Info("get userID", zap.String("userID", userID))
+	return userID
 }

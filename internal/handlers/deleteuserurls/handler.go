@@ -11,7 +11,7 @@ import (
 )
 
 type service interface {
-	HandleUrls(data links.DeletedURLs)
+	ConsumeDeleteURLs(data links.DeletedURLs)
 }
 
 type Handler struct {
@@ -52,11 +52,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		URLs:   body,
 		UserID: userID,
 	}
-	h.service.HandleUrls(urls)
+	h.service.ConsumeDeleteURLs(urls)
 
 	w.WriteHeader(http.StatusAccepted)
-	//w.Header().Set("Content-Type", "application/json")
-	//w.Write(result)
 }
 
 func getUserIDFromContext(ctx context.Context) string {
