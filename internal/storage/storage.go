@@ -269,7 +269,7 @@ func (l LinksStorage) DeleteUserURLs(ctx context.Context, ids [][]string, userID
 }
 
 func (l LinksStorage) DeleteUserURL(ctx context.Context, id string, userID string) error {
-	//_, err := l.db.ExecContext(ctx, `UPDATE links SET is_deleted = true WHERE short_url = $1 AND user_id = $2`, id, userID)
-	_, err := l.db.ExecContext(ctx, `UPDATE links SET is_deleted = true WHERE short_url = $1`, id)
+	_, err := l.db.ExecContext(ctx, `UPDATE links SET is_deleted = true WHERE short_url = $1 AND user_id = $2`, id, userID)
+	//_, err := l.db.ExecContext(ctx, `UPDATE links SET is_deleted = true WHERE short_url = $1`, id)
 	return err
 }
