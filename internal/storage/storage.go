@@ -54,7 +54,7 @@ func (l LinksStorage) AddLink(ctx context.Context, link models.Link, userID stri
 		logger.GetLogger().Error(err.Error())
 		return link, err
 	}
-	logger.GetLogger().Info(fmt.Sprintf("user successfully added in DB %s", userID))
+	//logger.GetLogger().Info(fmt.Sprintf("user successfully added in DB %s", userID))
 	return link, nil
 }
 
@@ -112,7 +112,7 @@ func (l LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link, use
 		logger.GetLogger().Error(err.Error())
 		return links, err
 	}
-	logger.GetLogger().Info(fmt.Sprintf("user successfully added in DB %s", userID))
+	//logger.GetLogger().Info(fmt.Sprintf("user successfully added in DB %s", userID))
 
 	return links, errorDB
 }
