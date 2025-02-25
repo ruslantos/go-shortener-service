@@ -68,7 +68,7 @@ func getUserIDFromContext(ctx context.Context) string {
 }
 
 func (q *QueueService) generator(doneCh chan struct{}, input []string) chan string {
-	inputCh := q.inChan
+	inputCh := make(chan string)
 
 	go func() {
 		defer close(inputCh)
