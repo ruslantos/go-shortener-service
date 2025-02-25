@@ -61,7 +61,7 @@ func main() {
 	var linkService links.LinkService
 	var queueService queue.QueueService
 
-	deleteIDCh := make(chan []string)
+	deleteIDCh := make(chan string)
 	// сигнальный канал для завершения горутин
 	doneCh := make(chan struct{})
 	// закрываем его при завершении программы

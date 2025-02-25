@@ -15,12 +15,12 @@ type linksStorage interface {
 	DeleteUserURL(ctx context.Context, id string, userID string) error
 }
 
-type inChan chan []string
+type inChan chan string
 type doneChan chan struct{}
 
 type QueueService struct {
 	linksStorage linksStorage
-	inChan       chan []string
+	inChan       chan string
 	doneChan     chan struct{}
 }
 
@@ -38,7 +38,7 @@ func (q *QueueService) DeleteUserUrls(ctx context.Context, ids []string) error {
 	//return q.linksStorage.DeleteUserURLs(ctx, ids, userID)
 
 	// канал с данными
-	inputCh := generator(q.doneChan, ids)
+	inputCh := q.generator(q.doneChan, ids)
 
 	err := q.markAsDeleted(ctx, inputCh, userID)
 	if err != nil {
@@ -67,8 +67,8 @@ func getUserIDFromContext(ctx context.Context) string {
 	return userID
 }
 
-func generator(doneCh chan struct{}, input []string) chan string {
-	inputCh := make(chan string)
+func (q *QueueService) generator(doneCh chan struct{}, input []string) chan string {
+	inputCh := q.inChan
 
 	go func() {
 		defer close(inputCh)
@@ -159,7 +159,7 @@ func (q *QueueService) markAsDeleted(ctx context.Context, inputCh chan string, u
 			if err != nil {
 				errs = err
 			}
-			logger.GetLogger().Info("deleted url", zap.String("url", URL))
+			logger.GetLogger().Info("goroutine delete url", zap.String("url", URL))
 		}(URL)
 	}
 	wg.Wait()
