@@ -8,6 +8,10 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"go.uber.org/zap"
+
+	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 )
 
 var (
@@ -31,6 +35,7 @@ func CookieMiddleware(next http.Handler) http.Handler {
 		switch {
 		// если кука валидная - используем ее
 		case cookieValid && err == nil:
+			logger.GetLogger().Info("В запросе валидная кука", zap.String("userID", cookieUserID))
 			r = setUserIDToContext(r, cookieUserID)
 		// если кука невалидная, используем Authorization токен
 		case authTokenValid:

@@ -52,10 +52,10 @@ func LoggerChi(logger *zap.Logger) func(next http.Handler) http.Handler {
 
 			rw := &responseWriter{ResponseWriter: w, body: &bytes.Buffer{}}
 
-			//logger.Info("Incoming request",
-			//	zap.String("method", r.Method),
-			//	zap.String("path", r.URL.Path),
-			//)
+			logger.Info("Incoming request",
+				zap.String("method", r.Method),
+				zap.String("path", r.URL.Path),
+			)
 
 			next.ServeHTTP(rw, r)
 
@@ -63,10 +63,6 @@ func LoggerChi(logger *zap.Logger) func(next http.Handler) http.Handler {
 
 			var cookies []string
 			cookies = append(cookies, rw.Header()["Set-Cookie"]...)
-
-			//for _, auth := range rw.Header()["Set-Cookie"] {
-			//	cookies = append(cookies, auth)
-			//}
 
 			logger.Info("Outgoing response",
 				zap.Int("status", rw.Status()),

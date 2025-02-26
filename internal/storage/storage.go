@@ -252,8 +252,8 @@ func (l LinksStorage) DeleteUserURLs(ctx context.Context, urls []links.DeletedUR
 
 	for _, deletedURL := range urls {
 		for _, url := range deletedURL.URLs {
-			//_, err = stmt.ExecContext(ctx, url, deletedURL.UserID)
-			_, err = stmt.ExecContext(ctx, url)
+			_, err = stmt.ExecContext(ctx, url, deletedURL.UserID)
+			//_, err = stmt.ExecContext(ctx, url)
 			if err != nil {
 				return err
 			}
