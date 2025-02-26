@@ -243,9 +243,8 @@ func (l LinksStorage) DeleteUserURLs(ctx context.Context, urls []links.DeletedUR
 		}
 	}()
 
-	//stmt, err := tx.PrepareContext(ctx, "UPDATE links SET is_deleted = true FROM links l JOIN users u ON l.short_url = u.short_url WHERE l.short_url = $1 AND u.user_id = $2")
-	//stmt, err := tx.PrepareContext(ctx, "UPDATE links SET is_deleted = true WHERE short_url = $1 AND user_id = $2")
-	stmt, err := tx.PrepareContext(ctx, "UPDATE links SET is_deleted = true WHERE short_url = $1")
+	stmt, err := tx.PrepareContext(ctx, "UPDATE links SET is_deleted = true WHERE short_url = $1 AND user_id = $2")
+	//stmt, err := tx.PrepareContext(ctx, "UPDATE links SET is_deleted = true WHERE short_url = $1")
 	if err != nil {
 		return err
 	}
