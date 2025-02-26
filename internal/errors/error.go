@@ -5,3 +5,4 @@ import (
 )
 
 var ErrURLAlreadyExists = errors.New("URL already exists")
+var ErrURLDeleted = errors.New("URL deleted")

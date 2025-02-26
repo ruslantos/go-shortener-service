@@ -12,6 +12,7 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	internal_errors "github.com/ruslantos/go-shortener-service/internal/errors"
+	"github.com/ruslantos/go-shortener-service/internal/links"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/models"
 )
@@ -26,9 +27,9 @@ func NewLinksStorage(db *sqlx.DB) *LinksStorage {
 	}
 }
 
-func (l LinksStorage) AddLink(ctx context.Context, link models.Link) (models.Link, error) {
-	rows, err := l.db.QueryContext(context.Background(),
-		"INSERT INTO links  (short_url, original_url) VALUES ($1, $2)", link.ShortURL, link.OriginalURL)
+func (l LinksStorage) AddLink(ctx context.Context, link models.Link, userID string) (models.Link, error) {
+	rows, err := l.db.QueryContext(ctx,
+		"INSERT INTO links  (short_url, original_url, user_id) VALUES ($1, $2, $3)", link.ShortURL, link.OriginalURL, userID)
 	if err != nil || rows.Err() != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok {
 			if pgErr.Code == pgerrcode.UniqueViolation {
@@ -51,7 +52,7 @@ func (l LinksStorage) AddLink(ctx context.Context, link models.Link) (models.Lin
 	return link, nil
 }
 
-func (l LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link) ([]models.Link, error) {
+func (l LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link, userID string) ([]models.Link, error) {
 	tx, err := l.db.Begin()
 	if err != nil {
 		return nil, err
@@ -61,7 +62,7 @@ func (l LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link) ([]
 	}()
 
 	stmtInsert, err := tx.PrepareContext(ctx,
-		"INSERT INTO links (correlation_id, short_url, original_url)VALUES($1,$2,$3) "+
+		"INSERT INTO links (correlation_id, short_url, original_url, user_id)VALUES($1,$2,$3,$4) "+
 			"ON CONFLICT (original_url) DO NOTHING RETURNING short_url")
 	if err != nil {
 		return nil, err
@@ -79,7 +80,7 @@ func (l LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link) ([]
 	for i := range links {
 		v := &links[i]
 		var originalURL string
-		errDB := stmtInsert.QueryRowContext(ctx, v.CorrelationID, v.ShortURL, v.OriginalURL).Scan(&originalURL)
+		errDB := stmtInsert.QueryRowContext(ctx, v.CorrelationID, v.ShortURL, v.OriginalURL, userID).Scan(&originalURL)
 		if errDB != nil {
 			if errors.Is(errDB, sql.ErrNoRows) {
 				errorDB = internal_errors.ErrURLAlreadyExists
@@ -98,21 +99,27 @@ func (l LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link) ([]
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
+
 	return links, errorDB
 }
 
-func (l LinksStorage) GetLink(ctx context.Context, value string) (string, bool, error) {
-	row := l.db.QueryRowContext(context.Background(),
-		"SELECT original_url FROM links where short_url = $1 LIMIT 1", value)
-	var long string
-	err := row.Scan(&long)
+func (l LinksStorage) GetLink(ctx context.Context, value string) (models.Link, bool, error) {
+	row := l.db.QueryRowContext(ctx,
+		"SELECT original_url, is_deleted FROM links where short_url = $1 LIMIT 1", value)
+	var linkDB models.Link
+	var isDeleted sql.NullBool
+	err := row.Scan(&linkDB.OriginalURL, &isDeleted)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return "", false, nil
+			return linkDB, false, nil
 		}
-		return "", false, err
+		return linkDB, false, err
 	}
-	return long, true, nil
+
+	if isDeleted.Valid {
+		linkDB.IsDeleted = &isDeleted.Bool
+	}
+	return linkDB, true, nil
 }
 
 func (l LinksStorage) Ping(ctx context.Context) error {
@@ -129,11 +136,103 @@ func (l LinksStorage) Ping(ctx context.Context) error {
 
 func (l LinksStorage) InitStorage() error {
 	_, err := l.db.ExecContext(context.Background(),
-		`CREATE TABLE IF NOT EXISTS links(short_url TEXT,original_url TEXT, correlation_id TEXT);
+		`CREATE TABLE IF NOT EXISTS links(short_url TEXT,original_url TEXT, correlation_id TEXT, user_id TEXT, is_deleted BOOLEAN);
 				CREATE UNIQUE INDEX IF NOT EXISTS idx_original_url ON links(original_url);`)
 	if err != nil {
 		logger.GetLogger().Error(err.Error())
 		return err
+	}
+
+	return nil
+}
+
+func (l LinksStorage) UpdateUser(ctx context.Context, links []models.Link, userID string) error {
+	if len(links) == 0 {
+		return nil
+	}
+
+	tx, err := l.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		} else {
+			err = tx.Commit()
+		}
+	}()
+
+	stmt, err := tx.PrepareContext(ctx, "INSERT INTO users (short_url, user_id) VALUES ($1, $2)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, link := range links {
+		_, err = stmt.ExecContext(ctx, link.ShortURL, userID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (l LinksStorage) GetUserLinks(ctx context.Context, userID string) ([]models.Link, error) {
+	var links []models.Link
+	rows, err := l.db.QueryContext(ctx,
+		"SELECT short_url, original_url FROM links WHERE user_id = $1", userID)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var link models.Link
+		err := rows.Scan(&link.ShortURL, &link.OriginalURL)
+		if err != nil {
+			return nil, err
+		}
+		links = append(links, link)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return links, nil
+}
+
+func (l LinksStorage) DeleteUserURLs(ctx context.Context, urls []links.DeletedURLs) error {
+	if len(urls) == 0 {
+		return nil
+	}
+
+	tx, err := l.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		} else {
+			err = tx.Commit()
+		}
+	}()
+
+	stmt, err := tx.PrepareContext(ctx, "UPDATE links SET is_deleted = true WHERE (short_url = $1 and user_id = $2)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, deletedURL := range urls {
+		for _, url := range deletedURL.URLs {
+			_, err = stmt.ExecContext(ctx, url, deletedURL.UserID)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil

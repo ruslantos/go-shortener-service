@@ -8,6 +8,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 
 	fileJob "github.com/ruslantos/go-shortener-service/internal/files"
+	"github.com/ruslantos/go-shortener-service/internal/links"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/models"
 )
@@ -36,7 +37,7 @@ func NewMapLinksStorage(fileConsumer FileConsumer, fileProducer FileProducer) *L
 	}
 }
 
-func (l *LinksStorage) AddLink(ctx context.Context, link models.Link) (models.Link, error) {
+func (l *LinksStorage) AddLink(ctx context.Context, link models.Link, userID string) (models.Link, error) {
 	l.addLinksToMap([]models.Link{link})
 
 	err := l.writeFile(link)
@@ -47,7 +48,7 @@ func (l *LinksStorage) AddLink(ctx context.Context, link models.Link) (models.Li
 	return link, nil
 }
 
-func (l *LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link) ([]models.Link, error) {
+func (l *LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link, userID string) ([]models.Link, error) {
 	l.addLinksToMap(links)
 
 	for _, link := range links {
@@ -59,9 +60,10 @@ func (l *LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link) ([
 	return links, nil
 }
 
-func (l *LinksStorage) GetLink(ctx context.Context, value string) (string, bool, error) {
+func (l *LinksStorage) GetLink(ctx context.Context, value string) (models.Link, bool, error) {
 	result, ok := l.linksMap[value]
-	return result.OriginalURL, ok, nil
+	link := models.Link{OriginalURL: result.OriginalURL}
+	return link, ok, nil
 }
 
 func (l *LinksStorage) addLinksToMap(links []models.Link) {
@@ -99,5 +101,13 @@ func (l *LinksStorage) writeFile(link models.Link) error {
 }
 
 func (l LinksStorage) Ping(context.Context) error {
+	return nil
+}
+
+func (l *LinksStorage) GetUserLinks(ctx context.Context, userID string) ([]models.Link, error) {
+	return nil, nil
+}
+
+func (l *LinksStorage) DeleteUserURLs(ctx context.Context, urls []links.DeletedURLs) error {
 	return nil
 }
