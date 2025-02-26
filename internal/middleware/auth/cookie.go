@@ -40,6 +40,10 @@ func CookieMiddleware(next http.Handler) http.Handler {
 			userID := generateUserID()
 			newCookie := createSignedCookie(userID)
 			http.SetCookie(w, &newCookie)
+
+			newAuthToken := createSignedToken(userID)
+			w.Header().Set("Authorization", fmt.Sprintf("Bearer %s", newAuthToken))
+
 			r = setUserIDToContext(r, userID)
 
 		}
