@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	secretKey = []byte("secret-key") // Секретный ключ для подписи
+	secretKey = []byte("secret-key")
 )
 
 type contextKey string
@@ -36,13 +36,15 @@ func CookieMiddleware(next http.Handler) http.Handler {
 		switch {
 		// если кука валидная - используем ее
 		case cookieValid && err == nil:
-			logger.GetLogger().Info("В запросе валидная кука", zap.String("userID", cookieUserID))
+			logger.GetLogger().Debug("Получен userID из Cookie", zap.String("userID", cookieUserID))
 			r = setUserIDToContext(r, cookieUserID)
 		// если кука невалидная, используем Authorization токен
 		case authTokenValid:
+			logger.GetLogger().Debug("Получен userID из Authorization токена", zap.String("userID", cookieUserID))
 			r = setUserIDToContext(r, authUserID)
 		// генерим новый userID и возвращаем в куке и Authorization хэдере
 		default:
+			logger.GetLogger().Debug("Сгенерирован новый userID", zap.String("userID", cookieUserID))
 			userID := generateUserID()
 			newCookie := createSignedCookie(userID)
 			http.SetCookie(w, &newCookie)
@@ -62,7 +64,6 @@ func generateUserID() string {
 	return fmt.Sprintf("%d", time.Now().UnixNano())
 }
 func setUserIDToContext(r *http.Request, userID string) *http.Request {
-	logger.GetLogger().Debug("userID передан в контекст", zap.String("userID", userID))
 	ctx := context.WithValue(r.Context(), UserIDKey, userID)
 	return r.WithContext(ctx)
 }

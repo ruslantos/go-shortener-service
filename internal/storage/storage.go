@@ -143,13 +143,6 @@ func (l LinksStorage) InitStorage() error {
 		return err
 	}
 
-	//_, err = l.db.ExecContext(context.Background(),
-	//	`CREATE TABLE IF NOT EXISTS users(short_url TEXT,user_id TEXT);`)
-	//if err != nil {
-	//	logger.GetLogger().Error(err.Error())
-	//	return err
-	//}
-
 	return nil
 }
 

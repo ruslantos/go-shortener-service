@@ -62,6 +62,5 @@ func getUserIDFromContext(ctx context.Context) string {
 	if !ok {
 		return ""
 	}
-	//logger.GetLogger().Info("get userID", zap.String("userID", userID))
 	return userID
 }
