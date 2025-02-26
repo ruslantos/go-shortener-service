@@ -40,6 +40,8 @@ func CookieMiddleware(next http.Handler) http.Handler {
 			userID := generateUserID()
 			newCookie := createSignedCookie(userID)
 			http.SetCookie(w, &newCookie)
+			r = setUserIDToContext(r, userID)
+
 		}
 
 		//if err != nil || cookie == nil {
