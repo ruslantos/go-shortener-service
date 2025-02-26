@@ -52,9 +52,14 @@ func LoggerChi(logger *zap.Logger) func(next http.Handler) http.Handler {
 
 			rw := &responseWriter{ResponseWriter: w, body: &bytes.Buffer{}}
 
+			cookieHeader := r.Header.Get("Cookie")
+			authorizationHeader := r.Header.Get("Authorization")
+
 			logger.Debug("Incoming request",
 				zap.String("method", r.Method),
 				zap.String("path", r.URL.Path),
+				zap.String("cookie", cookieHeader),
+				zap.String("authorization", authorizationHeader),
 			)
 
 			next.ServeHTTP(rw, r)
