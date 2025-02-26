@@ -1,6 +1,7 @@
 package authheader
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
@@ -15,7 +16,7 @@ import (
 )
 
 var (
-	secretKey = []byte("your-secret-key") // Секретный ключ для подписи
+	secretKey = []byte("secret-key") // Секретный ключ для подписи
 )
 
 type contextKey string
@@ -53,34 +54,20 @@ func CookieMiddleware(next http.Handler) http.Handler {
 
 		}
 
-		//if err != nil || cookie == nil {
-		//	if cookie == nil {
-		//		//logger.GetLogger().Info("Кука отсутствует в запросе")
-		//	}
-		//	// создаем новую
-		//	userID := generateUserID()
-		//	newCookie := createSignedCookie(userID)
-		//	http.SetCookie(w, &newCookie)
-		//	//logger.GetLogger().Info("Новая кука создана", zap.String("userID", userID))
-		//	// не передаю в контекст тк userID передается из Authorization хэдера
-		//} else {
-		//	// проверяем
-		//	userID, valid := verifyCookie(cookie)
-		//	if !valid {
-		//		userID = generateUserID()
-		//		newCookie := createSignedCookie(userID)
-		//		http.SetCookie(w, &newCookie)
-		//		//logger.GetLogger().Info("Кука не прошла проверку, новая кука создана", zap.String("userID", userID))
-		//
-		//	}
-		//	logger.GetLogger().Info("В запросе валидная кука", zap.String("userID", userID))
-		//	// не передаю в контекст тк userID передается из Authorization хэдера
-		//}
-
 		next.ServeHTTP(w, r)
 	})
 }
 
+func generateUserID() string {
+	return fmt.Sprintf("%d", time.Now().UnixNano())
+}
+func setUserIDToContext(r *http.Request, userID string) *http.Request {
+	logger.GetLogger().Debug("userID передан в контекст", zap.String("userID", userID))
+	ctx := context.WithValue(r.Context(), UserIDKey, userID)
+	return r.WithContext(ctx)
+}
+
+// методы для Cookie
 func createSignedCookie(userID string) http.Cookie {
 	h := hmac.New(sha256.New, secretKey)
 	h.Write([]byte(userID))
@@ -99,7 +86,6 @@ func createSignedCookie(userID string) http.Cookie {
 
 	return cookie
 }
-
 func verifyCookie(cookie *http.Cookie) (string, bool) {
 	if cookie == nil {
 		return "", false
@@ -123,6 +109,56 @@ func verifyCookie(cookie *http.Cookie) (string, bool) {
 	return userID, true
 }
 
-func generateUserID() string {
-	return fmt.Sprintf("%d", time.Now().UnixNano())
+// методы для Auth хэдера
+func createSignedToken(userID string) string {
+	h := hmac.New(sha256.New, secretKey)
+	h.Write([]byte(userID))
+	signature := base64.URLEncoding.EncodeToString(h.Sum(nil))
+
+	tokenValue := fmt.Sprintf("%s|%s", userID, signature)
+
+	return tokenValue
+}
+func verifyToken(token string) (string, bool) {
+	parts := strings.SplitN(token, "|", 2)
+	if len(parts) != 2 {
+		return "", false
+	}
+
+	userID := parts[0]
+	signature := parts[1]
+
+	h := hmac.New(sha256.New, secretKey)
+	h.Write([]byte(userID))
+	expectedSignature := base64.URLEncoding.EncodeToString(h.Sum(nil))
+
+	if !hmac.Equal([]byte(signature), []byte(expectedSignature)) {
+		return "", false
+	}
+
+	return userID, true
+}
+func verifyAuthToken(token string) (string, bool) {
+	authToken := strings.SplitN(token, " ", 2)
+	if len(authToken) != 2 && authToken[0] != "Bearer" {
+		return "", false
+	}
+
+	parts := strings.SplitN(authToken[1], "|", 2)
+	if len(parts) != 2 {
+		return "", false
+	}
+
+	userID := parts[0]
+	signature := parts[1]
+
+	h := hmac.New(sha256.New, secretKey)
+	h.Write([]byte(userID))
+	expectedSignature := base64.URLEncoding.EncodeToString(h.Sum(nil))
+
+	if !hmac.Equal([]byte(signature), []byte(expectedSignature)) {
+		return "", false
+	}
+
+	return userID, true
 }

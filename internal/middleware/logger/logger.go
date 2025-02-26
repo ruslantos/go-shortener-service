@@ -52,7 +52,7 @@ func LoggerChi(logger *zap.Logger) func(next http.Handler) http.Handler {
 
 			rw := &responseWriter{ResponseWriter: w, body: &bytes.Buffer{}}
 
-			logger.Info("Incoming request",
+			logger.Debug("Incoming request",
 				zap.String("method", r.Method),
 				zap.String("path", r.URL.Path),
 			)
@@ -64,7 +64,7 @@ func LoggerChi(logger *zap.Logger) func(next http.Handler) http.Handler {
 			var cookies []string
 			cookies = append(cookies, rw.Header()["Set-Cookie"]...)
 
-			logger.Info("Outgoing response",
+			logger.Debug("Outgoing response",
 				zap.Int("status", rw.Status()),
 				zap.Duration("duration", duration),
 				zap.Int("response_size", rw.Size()),

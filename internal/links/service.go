@@ -126,7 +126,8 @@ func (l *LinkService) StartDeleteWorker(ctx context.Context) {
 				if err != nil {
 					logger.GetLogger().Error("delete urls from db error", zap.Error(err))
 				}
-				buffer = nil // Очищаем буфер
+				buffer = nil
+				logger.GetLogger().Info("timer expired, deleting urls from db")
 			}
 
 		case <-timer.C:
@@ -136,7 +137,7 @@ func (l *LinkService) StartDeleteWorker(ctx context.Context) {
 				if err != nil {
 					logger.GetLogger().Error("delete urls from db error", zap.Error(err))
 				}
-				buffer = nil // Очищаем буфер
+				buffer = nil
 			}
 		}
 	}

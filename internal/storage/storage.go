@@ -49,13 +49,6 @@ func (l LinksStorage) AddLink(ctx context.Context, link models.Link, userID stri
 		return link, err
 	}
 
-	// обновляем пользователя
-	//err = l.UpdateUser(ctx, []models.Link{link}, userID)
-	//if err != nil {
-	//	logger.GetLogger().Error(err.Error())
-	//	return link, err
-	//}
-	//logger.GetLogger().Info(fmt.Sprintf("user successfully added in DB %s", userID))
 	return link, nil
 }
 
@@ -106,14 +99,6 @@ func (l LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link, use
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-
-	// обновляем пользователя
-	//err = l.UpdateUser(ctx, links, userID)
-	//if err != nil {
-	//	logger.GetLogger().Error(err.Error())
-	//	return links, err
-	//}
-	//logger.GetLogger().Info(fmt.Sprintf("user successfully added in DB %s", userID))
 
 	return links, errorDB
 }
@@ -204,7 +189,6 @@ func (l LinksStorage) UpdateUser(ctx context.Context, links []models.Link, userI
 func (l LinksStorage) GetUserLinks(ctx context.Context, userID string) ([]models.Link, error) {
 	var links []models.Link
 	rows, err := l.db.QueryContext(ctx,
-		//"SELECT l.short_url, l.original_url FROM links l JOIN users u ON l.short_url = u.short_url WHERE u.user_id = $1", userID)
 		"SELECT short_url, original_url FROM links WHERE user_id = $1", userID)
 	if err != nil {
 		return nil, err
@@ -243,8 +227,7 @@ func (l LinksStorage) DeleteUserURLs(ctx context.Context, urls []links.DeletedUR
 		}
 	}()
 
-	stmt, err := tx.PrepareContext(ctx, "UPDATE links SET is_deleted = true WHERE short_url = $1 AND user_id = $2")
-	//stmt, err := tx.PrepareContext(ctx, "UPDATE links SET is_deleted = true WHERE short_url = $1")
+	stmt, err := tx.PrepareContext(ctx, "UPDATE links SET is_deleted = true WHERE short_url = $1")
 	if err != nil {
 		return err
 	}
@@ -252,8 +235,7 @@ func (l LinksStorage) DeleteUserURLs(ctx context.Context, urls []links.DeletedUR
 
 	for _, deletedURL := range urls {
 		for _, url := range deletedURL.URLs {
-			_, err = stmt.ExecContext(ctx, url, deletedURL.UserID)
-			//_, err = stmt.ExecContext(ctx, url)
+			_, err = stmt.ExecContext(ctx, url)
 			if err != nil {
 				return err
 			}
@@ -261,10 +243,4 @@ func (l LinksStorage) DeleteUserURLs(ctx context.Context, urls []links.DeletedUR
 	}
 
 	return nil
-}
-
-func (l LinksStorage) DeleteUserURL(ctx context.Context, id string, userID string) error {
-	_, err := l.db.ExecContext(ctx, `UPDATE links SET is_deleted = true WHERE short_url = $1 AND user_id = $2`, id, userID)
-	//_, err := l.db.ExecContext(ctx, `UPDATE links SET is_deleted = true WHERE short_url = $1`, id)
-	return err
 }

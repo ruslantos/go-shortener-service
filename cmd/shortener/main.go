@@ -92,7 +92,6 @@ func main() {
 	r.Use(compress.GzipMiddlewareWriter,
 		compress.GzipMiddlewareReader,
 		logger.LoggerChi(log),
-		//authMiddlware.AuthorizationMiddleware,
 		authMiddlware.CookieMiddleware)
 
 	r.Post("/", postLinkHandler.Handle)
