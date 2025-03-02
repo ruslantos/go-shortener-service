@@ -6,4 +6,5 @@ type Link struct {
 	CorrelationID string `json:"correlation_id"`
 	IsDeleted     bool   `json:"is_deleted"`
 	IsExist       *bool  `json:"is_exist"`
+	UserID        string `json:"user_id"`
 }

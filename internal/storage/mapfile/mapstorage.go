@@ -105,9 +105,31 @@ func (l LinksStorage) Ping(context.Context) error {
 }
 
 func (l *LinksStorage) GetUserLinks(ctx context.Context, userID string) ([]models.Link, error) {
-	return nil, nil
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
+	var userLinks []models.Link
+	for _, link := range l.linksMap {
+		if link.UserID == userID {
+			userLinks = append(userLinks, link)
+		}
+	}
+
+	return userLinks, nil
 }
 
 func (l *LinksStorage) DeleteUserURLs(ctx context.Context, urls []service.DeletedURLs) error {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
+	for _, url := range urls {
+		if link, exists := l.linksMap[url.URLs]; exists {
+			link.IsDeleted = true
+			l.linksMap[url.URLs] = link
+		} else {
+			return errors.New("url not found in storage")
+		}
+	}
+
 	return nil
 }
