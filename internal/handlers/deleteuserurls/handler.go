@@ -3,6 +3,7 @@ package deleteuserurls
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 
@@ -18,17 +19,13 @@ type Handler struct {
 	service linkService
 }
 
+type DeleteUserURLsRequest []string
+
 func New(service linkService) *Handler {
 	return &Handler{service: service}
 }
 
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
-	_, ok := r.Context().Value(auth.UserIDKey).(string)
-	if !ok {
-		http.Error(w, "user not found", http.StatusUnauthorized)
-		return
-	}
-
 	bodyRaw, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Reading body error", http.StatusBadRequest)
@@ -40,14 +37,19 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var body DeleteUserURLsResponse
+	var body DeleteUserURLsRequest
 	err = json.Unmarshal(bodyRaw, &body)
 	if err != nil {
 		http.Error(w, "Unmarshalling error", http.StatusBadRequest)
 		return
 	}
 
-	userID := getUserIDFromContext(r.Context())
+	userID, err := getUserIDFromContext(r.Context())
+	if err != nil {
+		http.Error(w, "user not found", http.StatusUnauthorized)
+		return
+	}
+
 	urls := service.DeletedURLs{
 		URLs:   body,
 		UserID: userID,
@@ -57,10 +59,10 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func getUserIDFromContext(ctx context.Context) string {
+func getUserIDFromContext(ctx context.Context) (string, error) {
 	userID, ok := ctx.Value(auth.UserIDKey).(string)
 	if !ok {
-		return ""
+		return "", errors.New("user not found from context")
 	}
-	return userID
+	return userID, nil
 }
