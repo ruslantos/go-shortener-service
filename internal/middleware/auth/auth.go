@@ -70,11 +70,7 @@ func setUserIDToContext(r *http.Request, userID string) *http.Request {
 
 // методы для Cookie
 func createSignedCookie(userID string) http.Cookie {
-	h := hmac.New(sha256.New, secretKey)
-	h.Write([]byte(userID))
-	signature := base64.URLEncoding.EncodeToString(h.Sum(nil))
-
-	cookieValue := fmt.Sprintf("%s|%s", userID, signature)
+	cookieValue := createToken(userID)
 
 	cookie := http.Cookie{
 		Name:     "user",
@@ -112,13 +108,7 @@ func verifyCookie(cookie *http.Cookie) (string, bool) {
 
 // методы для Auth хэдера
 func createSignedToken(userID string) string {
-	h := hmac.New(sha256.New, secretKey)
-	h.Write([]byte(userID))
-	signature := base64.URLEncoding.EncodeToString(h.Sum(nil))
-
-	tokenValue := fmt.Sprintf("%s|%s", userID, signature)
-
-	return tokenValue
+	return createToken(userID)
 }
 func verifyToken(token string) (string, bool) {
 	parts := strings.SplitN(token, "|", 2)
@@ -162,4 +152,12 @@ func verifyAuthToken(token string) (string, bool) {
 	}
 
 	return userID, true
+}
+
+func createToken(userID string) string {
+	h := hmac.New(sha256.New, secretKey)
+	h.Write([]byte(userID))
+	signature := base64.URLEncoding.EncodeToString(h.Sum(nil))
+
+	return fmt.Sprintf("%s|%s", userID, signature)
 }
