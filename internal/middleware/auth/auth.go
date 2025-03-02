@@ -30,18 +30,20 @@ func CookieMiddleware(next http.Handler) http.Handler {
 		cookie, err := r.Cookie("user")
 		cookieUserID, cookieValid := verifyCookie(cookie)
 
-		authHeader := r.Header.Get("Authorization")
-		authUserID, authTokenValid := verifyAuthToken(authHeader)
+		//authHeader := r.Header.Get("Authorization")
+		//authUserID, authTokenValid := verifyAuthToken(authHeader)
 
 		switch {
 		// если кука валидная - используем ее
 		case cookieValid && err == nil:
 			logger.GetLogger().Debug("Получен userID из Cookie", zap.String("userID", cookieUserID))
 			r = setUserIDToContext(r, cookieUserID)
+
 		// если кука невалидная, используем Authorization токен
-		case authTokenValid:
-			logger.GetLogger().Debug("Получен userID из Authorization токена", zap.String("userID", authUserID))
-			r = setUserIDToContext(r, authUserID)
+		//case authTokenValid:
+		//	logger.GetLogger().Debug("Получен userID из Authorization токена", zap.String("userID", authUserID))
+		//	r = setUserIDToContext(r, authUserID)
+
 		// генерим новый userID и возвращаем в куке и Authorization хэдере
 		default:
 			userID := generateUserID()
