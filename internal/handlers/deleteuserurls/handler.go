@@ -6,19 +6,19 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/ruslantos/go-shortener-service/internal/links"
 	auth "github.com/ruslantos/go-shortener-service/internal/middleware/auth"
+	"github.com/ruslantos/go-shortener-service/internal/service"
 )
 
-type service interface {
-	ConsumeDeleteURLs(data links.DeletedURLs)
+type linkService interface {
+	ConsumeDeleteURLs(data service.DeletedURLs)
 }
 
 type Handler struct {
-	service service
+	service linkService
 }
 
-func New(service service) *Handler {
+func New(service linkService) *Handler {
 	return &Handler{service: service}
 }
 
@@ -48,7 +48,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := getUserIDFromContext(r.Context())
-	urls := links.DeletedURLs{
+	urls := service.DeletedURLs{
 		URLs:   body,
 		UserID: userID,
 	}

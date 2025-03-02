@@ -8,9 +8,9 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 
 	fileJob "github.com/ruslantos/go-shortener-service/internal/files"
-	"github.com/ruslantos/go-shortener-service/internal/links"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/models"
+	"github.com/ruslantos/go-shortener-service/internal/service"
 )
 
 type FileConsumer interface {
@@ -108,6 +108,6 @@ func (l *LinksStorage) GetUserLinks(ctx context.Context, userID string) ([]model
 	return nil, nil
 }
 
-func (l *LinksStorage) DeleteUserURLs(ctx context.Context, urls []links.DeletedURLs) error {
+func (l *LinksStorage) DeleteUserURLs(ctx context.Context, urls []service.DeletedURLs) error {
 	return nil
 }

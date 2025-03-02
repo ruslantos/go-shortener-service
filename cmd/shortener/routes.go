@@ -11,13 +11,13 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/handlers/postlink"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/shorten"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/shortenbatch"
-	"github.com/ruslantos/go-shortener-service/internal/links"
 	authMiddlware "github.com/ruslantos/go-shortener-service/internal/middleware/auth"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/compress"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
+	"github.com/ruslantos/go-shortener-service/internal/service"
 )
 
-func setupRouter(linkService links.LinkService, log *zap.Logger) *chi.Mux {
+func setupRouter(linkService service.LinkService, log *zap.Logger) *chi.Mux {
 	postLinkHandler := postlink.New(&linkService)
 	getLinkHandler := getlink.New(&linkService)
 	shortenHandler := shorten.New(&linkService)

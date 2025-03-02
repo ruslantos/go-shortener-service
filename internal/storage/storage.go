@@ -12,9 +12,9 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	internal_errors "github.com/ruslantos/go-shortener-service/internal/errors"
-	"github.com/ruslantos/go-shortener-service/internal/links"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/models"
+	"github.com/ruslantos/go-shortener-service/internal/service"
 )
 
 type LinksStorage struct {
@@ -203,7 +203,7 @@ func (l LinksStorage) GetUserLinks(ctx context.Context, userID string) ([]models
 	return links, nil
 }
 
-func (l LinksStorage) DeleteUserURLs(ctx context.Context, urls []links.DeletedURLs) error {
+func (l LinksStorage) DeleteUserURLs(ctx context.Context, urls []service.DeletedURLs) error {
 	if len(urls) == 0 {
 		return nil
 	}

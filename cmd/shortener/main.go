@@ -10,8 +10,8 @@ import (
 
 	"github.com/ruslantos/go-shortener-service/internal/config"
 	fileClient "github.com/ruslantos/go-shortener-service/internal/files"
-	"github.com/ruslantos/go-shortener-service/internal/links"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
+	"github.com/ruslantos/go-shortener-service/internal/service"
 	"github.com/ruslantos/go-shortener-service/internal/storage"
 	"github.com/ruslantos/go-shortener-service/internal/storage/mapfile"
 )
@@ -25,8 +25,8 @@ func main() {
 
 	config.ParseFlags()
 
-	var linkService links.LinkService
-	var linkStorage links.LinksStorage
+	var linkService service.LinkService
+	var linkStorage service.LinksStorage
 
 	cfg := storage.Load()
 	switch cfg.StorageType {
@@ -61,7 +61,7 @@ func main() {
 		logger.GetLogger().Fatal("unknown storage type", zap.String("storageType", cfg.StorageType))
 	}
 
-	linkService = *links.NewLinkService(linkStorage)
+	linkService = *service.NewLinkService(linkStorage)
 
 	r := setupRouter(linkService, log)
 

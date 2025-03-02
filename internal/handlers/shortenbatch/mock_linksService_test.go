@@ -22,7 +22,7 @@ func (_m *MocklinksService) EXPECT() *MocklinksService_Expecter {
 	return &MocklinksService_Expecter{mock: &_m.Mock}
 }
 
-// AddBatch provides a mock function with given fields: ctx, links
+// AddBatch provides a mock function with given fields: ctx, service
 func (_m *MocklinksService) AddBatch(ctx context.Context, links []models.Link) ([]models.Link, error) {
 	ret := _m.Called(ctx, links)
 
@@ -59,7 +59,7 @@ type MocklinksService_AddBatch_Call struct {
 
 // AddBatch is a helper method to define mock.On call
 //   - ctx context.Context
-//   - links []models.Link
+//   - service []models.Link
 func (_e *MocklinksService_Expecter) AddBatch(ctx interface{}, links interface{}) *MocklinksService_AddBatch_Call {
 	return &MocklinksService_AddBatch_Call{Call: _e.mock.On("AddBatch", ctx, links)}
 }
