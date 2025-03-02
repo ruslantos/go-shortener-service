@@ -33,7 +33,7 @@ type Config struct {
 }
 
 type DeletedURLs struct {
-	URLs   []string
+	URLs   string
 	UserID string
 }
 

@@ -229,11 +229,9 @@ func (l LinksStorage) DeleteUserURLs(ctx context.Context, urls []service.Deleted
 	defer stmt.Close()
 
 	for _, deletedURL := range urls {
-		for _, url := range deletedURL.URLs {
-			_, err = stmt.ExecContext(ctx, url)
-			if err != nil {
-				return err
-			}
+		_, err = stmt.ExecContext(ctx, deletedURL.URLs)
+		if err != nil {
+			return err
 		}
 	}
 

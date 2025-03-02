@@ -50,11 +50,13 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	urls := service.DeletedURLs{
-		URLs:   body,
-		UserID: userID,
+	for _, url := range body {
+		urls := service.DeletedURLs{
+			URLs:   url,
+			UserID: userID,
+		}
+		h.service.ConsumeDeleteURLs(urls)
 	}
-	h.service.ConsumeDeleteURLs(urls)
 
 	w.WriteHeader(http.StatusAccepted)
 }
