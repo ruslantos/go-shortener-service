@@ -211,6 +211,9 @@ func (l LinksStorage) DeleteUserURLs(ctx context.Context, urls []service.Deleted
 	}
 
 	tx, err := l.db.Begin()
+	if err != nil {
+		return err
+	}
 	defer tx.Rollback()
 
 	stmt, err := tx.PrepareContext(ctx, "UPDATE links SET is_deleted = true WHERE short_url = $1")
