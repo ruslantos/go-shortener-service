@@ -2,13 +2,12 @@ package service
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	errors2 "github.com/ruslantos/go-shortener-service/internal/errors"
+	internal_errors "github.com/ruslantos/go-shortener-service/internal/errors"
 	auth "github.com/ruslantos/go-shortener-service/internal/middleware/auth"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/models"
@@ -16,7 +15,7 @@ import (
 
 type LinksStorage interface {
 	AddLink(ctx context.Context, link models.Link, userID string) (models.Link, error)
-	GetLink(ctx context.Context, value string) (models.Link, bool, error)
+	GetLink(ctx context.Context, value string) (models.Link, error)
 	Ping(ctx context.Context) error
 	AddLinkBatch(ctx context.Context, links []models.Link, userID string) ([]models.Link, error)
 	GetUserLinks(ctx context.Context, userID string) ([]models.Link, error)
@@ -46,15 +45,15 @@ func NewLinkService(linksStorage LinksStorage) *LinkService {
 }
 
 func (l *LinkService) Get(ctx context.Context, shortLink string) (string, error) {
-	v, ok, err := l.linksStorage.GetLink(ctx, shortLink)
+	v, err := l.linksStorage.GetLink(ctx, shortLink)
 	if err != nil {
 		return "", err
 	}
-	if !ok {
-		return v.ShortURL, errors.New("link not found")
+	if v.IsExist != nil && !*v.IsExist {
+		return v.ShortURL, internal_errors.ErrURLNotFound
 	}
-	if v.IsDeleted != nil && *v.IsDeleted {
-		return "", errors2.ErrURLDeleted
+	if v.IsDeleted {
+		return "", internal_errors.ErrURLDeleted
 	}
 	return v.OriginalURL, nil
 }

@@ -103,7 +103,7 @@ func (l LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link, use
 	return links, errorDB
 }
 
-func (l LinksStorage) GetLink(ctx context.Context, value string) (models.Link, bool, error) {
+func (l LinksStorage) GetLink(ctx context.Context, value string) (models.Link, error) {
 	row := l.db.QueryRowContext(ctx,
 		"SELECT original_url, is_deleted FROM links where short_url = $1 LIMIT 1", value)
 	var linkDB models.Link
@@ -111,15 +111,17 @@ func (l LinksStorage) GetLink(ctx context.Context, value string) (models.Link, b
 	err := row.Scan(&linkDB.OriginalURL, &isDeleted)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return linkDB, false, nil
+			linkDB.IsExist = new(bool)
+			*linkDB.IsExist = false
+			return linkDB, nil
 		}
-		return linkDB, false, err
+		return linkDB, err
 	}
 
 	if isDeleted.Valid {
-		linkDB.IsDeleted = &isDeleted.Bool
+		linkDB.IsDeleted = isDeleted.Bool
 	}
-	return linkDB, true, nil
+	return linkDB, nil
 }
 
 func (l LinksStorage) Ping(ctx context.Context) error {
