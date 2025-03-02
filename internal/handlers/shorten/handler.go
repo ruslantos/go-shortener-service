@@ -7,8 +7,11 @@ import (
 	"io"
 	"net/http"
 
+	"go.uber.org/zap"
+
 	"github.com/ruslantos/go-shortener-service/internal/config"
 	internal_errors "github.com/ruslantos/go-shortener-service/internal/errors"
+	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 )
 
 type linksService interface {
@@ -48,7 +51,8 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, internal_errors.ErrURLAlreadyExists) {
 			respStatus = http.StatusConflict
 		} else {
-			http.Error(w, "Write event error", http.StatusInternalServerError)
+			logger.GetLogger().Error("add shorten link error", zap.Error(err))
+			http.Error(w, "add shorten link error", http.StatusInternalServerError)
 			return
 		}
 	}

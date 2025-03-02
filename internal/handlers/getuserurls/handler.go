@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"net/http"
 
+	"go.uber.org/zap"
+
 	"github.com/ruslantos/go-shortener-service/internal/config"
 	auth "github.com/ruslantos/go-shortener-service/internal/middleware/auth"
+	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/models"
 )
 
@@ -32,6 +35,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 
 	urls, err := h.linksService.GetUserUrls(r.Context())
 	if err != nil {
+		logger.GetLogger().Error("filed to get user urls", zap.Error(err))
 		http.Error(w, fmt.Sprintf("filed to get user urls: %s", err.Error()), http.StatusBadRequest)
 		return
 	}

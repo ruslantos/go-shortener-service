@@ -7,7 +7,10 @@ import (
 	"net/http"
 	"strings"
 
+	"go.uber.org/zap"
+
 	internal_errors "github.com/ruslantos/go-shortener-service/internal/errors"
+	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 )
 
 type linksService interface {
@@ -32,7 +35,8 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusGone)
 			return
 		}
-		http.Error(w, fmt.Sprintf("failed to get long link: %s", err.Error()), http.StatusBadRequest)
+		logger.GetLogger().Error("failed to get original_url", zap.Error(err))
+		http.Error(w, fmt.Sprintf("failed to get original_url: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
 
