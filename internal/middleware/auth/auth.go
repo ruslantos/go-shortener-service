@@ -49,7 +49,7 @@ func CookieMiddleware(next http.Handler) http.Handler {
 			newCookie := createSignedCookie(userID)
 			http.SetCookie(w, &newCookie)
 
-			newAuthToken := createSignedToken(userID)
+			newAuthToken := createSignedAuthToken(userID)
 			w.Header().Set("Authorization", fmt.Sprintf("Bearer %s", newAuthToken))
 
 			r = setUserIDToContext(r, userID)
@@ -58,14 +58,6 @@ func CookieMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
-}
-
-func generateUserID() string {
-	return fmt.Sprintf("%d", time.Now().UnixNano())
-}
-func setUserIDToContext(r *http.Request, userID string) *http.Request {
-	ctx := context.WithValue(r.Context(), UserIDKey, userID)
-	return r.WithContext(ctx)
 }
 
 // методы для Cookie
@@ -87,28 +79,30 @@ func verifyCookie(cookie *http.Cookie) (string, bool) {
 	if cookie == nil {
 		return "", false
 	}
-	parts := strings.SplitN(cookie.Value, "|", 2)
-	if len(parts) != 2 {
-		return "", false
-	}
 
-	userID := parts[0]
-	signature := parts[1]
-
-	h := hmac.New(sha256.New, secretKey)
-	h.Write([]byte(userID))
-	expectedSignature := base64.URLEncoding.EncodeToString(h.Sum(nil))
-
-	if !hmac.Equal([]byte(signature), []byte(expectedSignature)) {
-		return "", false
-	}
-
-	return userID, true
+	return verifyToken(cookie.Value)
 }
 
 // методы для Auth хэдера
-func createSignedToken(userID string) string {
+func createSignedAuthToken(userID string) string {
 	return createToken(userID)
+}
+func verifyAuthToken(token string) (string, bool) {
+	authToken := strings.SplitN(token, " ", 2)
+	if len(authToken) != 2 && authToken[0] != "Bearer" {
+		return "", false
+	}
+
+	return verifyToken(authToken[1])
+}
+
+// общие методы
+func createToken(userID string) string {
+	h := hmac.New(sha256.New, secretKey)
+	h.Write([]byte(userID))
+	signature := base64.URLEncoding.EncodeToString(h.Sum(nil))
+
+	return fmt.Sprintf("%s|%s", userID, signature)
 }
 func verifyToken(token string) (string, bool) {
 	parts := strings.SplitN(token, "|", 2)
@@ -129,35 +123,10 @@ func verifyToken(token string) (string, bool) {
 
 	return userID, true
 }
-func verifyAuthToken(token string) (string, bool) {
-	authToken := strings.SplitN(token, " ", 2)
-	if len(authToken) != 2 && authToken[0] != "Bearer" {
-		return "", false
-	}
-
-	parts := strings.SplitN(authToken[1], "|", 2)
-	if len(parts) != 2 {
-		return "", false
-	}
-
-	userID := parts[0]
-	signature := parts[1]
-
-	h := hmac.New(sha256.New, secretKey)
-	h.Write([]byte(userID))
-	expectedSignature := base64.URLEncoding.EncodeToString(h.Sum(nil))
-
-	if !hmac.Equal([]byte(signature), []byte(expectedSignature)) {
-		return "", false
-	}
-
-	return userID, true
+func generateUserID() string {
+	return fmt.Sprintf("%d", time.Now().UnixNano())
 }
-
-func createToken(userID string) string {
-	h := hmac.New(sha256.New, secretKey)
-	h.Write([]byte(userID))
-	signature := base64.URLEncoding.EncodeToString(h.Sum(nil))
-
-	return fmt.Sprintf("%s|%s", userID, signature)
+func setUserIDToContext(r *http.Request, userID string) *http.Request {
+	ctx := context.WithValue(r.Context(), UserIDKey, userID)
+	return r.WithContext(ctx)
 }
