@@ -40,12 +40,12 @@ func CookieMiddleware(next http.Handler) http.Handler {
 			r = setUserIDToContext(r, cookieUserID)
 		// если кука невалидная, используем Authorization токен
 		case authTokenValid:
-			logger.GetLogger().Debug("Получен userID из Authorization токена", zap.String("userID", cookieUserID))
+			logger.GetLogger().Debug("Получен userID из Authorization токена", zap.String("userID", authUserID))
 			r = setUserIDToContext(r, authUserID)
 		// генерим новый userID и возвращаем в куке и Authorization хэдере
 		default:
-			logger.GetLogger().Debug("Сгенерирован новый userID", zap.String("userID", cookieUserID))
 			userID := generateUserID()
+			logger.GetLogger().Debug("Сгенерирован новый userID", zap.String("userID", userID))
 			newCookie := createSignedCookie(userID)
 			http.SetCookie(w, &newCookie)
 
