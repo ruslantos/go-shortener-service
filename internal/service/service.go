@@ -115,13 +115,10 @@ func (l *LinkService) StartDeleteWorker(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			// Если контекст завершен, выполняем финальное удаление оставшихся URL-ов
 			if len(buffer) > 0 {
-				err := l.linksStorage.DeleteUserURLs(ctx, buffer)
-				if err != nil {
-					logger.GetLogger().Error("delete urls from db error", zap.Error(err))
-				}
+				logger.GetLogger().Error("delete urls from db error: ctx.Done()")
 			}
+			return
 
 		case data := <-l.deleteChan:
 			buffer = append(buffer, data)
