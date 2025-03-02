@@ -25,51 +25,47 @@ func main() {
 
 	config.ParseFlags()
 
-	var db *sqlx.DB
-	if config.IsDatabaseExist {
-		db, err = sqlx.Open("pgx", config.DatabaseDsn)
+	var linkService links.LinkService
+	var linkStorage links.LinksStorage
+
+	cfg := storage.Load()
+	switch cfg.StorageType {
+	case "file":
+		fileProducer, err := fileClient.NewProducer(config.FileStoragePath)
+		if err != nil {
+			logger.GetLogger().Fatal("cannot create file producer", zap.Error(err))
+		}
+		fileConsumer, err := fileClient.NewConsumer(config.FileStoragePath)
+		if err != nil {
+			logger.GetLogger().Fatal("cannot create file consumer", zap.Error(err))
+		}
+
+		linkStorage = mapfile.NewMapLinksStorage(fileConsumer, fileProducer)
+		err = linkStorage.InitStorage()
+		if err != nil {
+			logger.GetLogger().Fatal("cannot initialize link map", zap.Error(err))
+		}
+	case "postgres":
+		db, err := sqlx.Open("pgx", config.DatabaseDsn)
 		if err != nil {
 			logger.GetLogger().Fatal("cannot connect to database", zap.Error(err))
 		}
 		defer db.Close()
-	}
 
-	var fileProducer *fileClient.Producer
-	var fileConsumer *fileClient.Consumer
-	if config.IsFileExist {
-		fileProducer, err = fileClient.NewProducer(config.FileStoragePath)
-		if err != nil {
-			logger.GetLogger().Fatal("cannot create file producer", zap.Error(err))
-		}
-
-		fileConsumer, err = fileClient.NewConsumer(config.FileStoragePath)
-		if err != nil {
-			logger.GetLogger().Fatal("cannot create file consumer", zap.Error(err))
-		}
-	}
-
-	var linkService links.LinkService
-
-	if config.IsDatabaseExist {
-		linksRepo := storage.NewLinksStorage(db)
-		err = linksRepo.InitStorage()
+		linkStorage = storage.NewLinksStorage(db)
+		err = linkStorage.InitStorage()
 		if err != nil {
 			logger.GetLogger().Fatal("cannot initialize database", zap.Error(err))
 		}
-		linkService = *links.NewLinkService(linksRepo)
-		// запускаем воркер удаления ссылок
-		go linkService.StartDeleteWorker(context.Background())
-	} else {
-		linksRepo := mapfile.NewMapLinksStorage(fileConsumer, fileProducer)
-		err = linksRepo.InitStorage()
-		if err != nil {
-			logger.GetLogger().Fatal("cannot initialize link map", zap.Error(err))
-		}
-		linkService = *links.NewLinkService(linksRepo)
-
+	default:
+		logger.GetLogger().Fatal("unknown storage type", zap.String("storageType", cfg.StorageType))
 	}
 
+	linkService = *links.NewLinkService(linkStorage)
+
 	r := setupRouter(linkService, log)
+
+	go linkService.StartDeleteWorker(context.Background())
 
 	err = http.ListenAndServe(config.FlagServerPort, r)
 	if err != nil {

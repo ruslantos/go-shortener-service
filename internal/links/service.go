@@ -14,18 +14,23 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/models"
 )
 
-type linksStorage interface {
+type LinksStorage interface {
 	AddLink(ctx context.Context, link models.Link, userID string) (models.Link, error)
 	GetLink(ctx context.Context, value string) (models.Link, bool, error)
 	Ping(ctx context.Context) error
 	AddLinkBatch(ctx context.Context, links []models.Link, userID string) ([]models.Link, error)
 	GetUserLinks(ctx context.Context, userID string) ([]models.Link, error)
 	DeleteUserURLs(ctx context.Context, urls []DeletedURLs) error
+	InitStorage() error
 }
 
 type LinkService struct {
-	linksStorage linksStorage
+	linksStorage LinksStorage
 	deleteChan   chan DeletedURLs
+}
+
+type Config struct {
+	StorageType string
 }
 
 type DeletedURLs struct {
@@ -33,7 +38,7 @@ type DeletedURLs struct {
 	UserID string
 }
 
-func NewLinkService(linksStorage linksStorage) *LinkService {
+func NewLinkService(linksStorage LinksStorage) *LinkService {
 	return &LinkService{
 		linksStorage: linksStorage,
 		deleteChan:   make(chan DeletedURLs, 100),
