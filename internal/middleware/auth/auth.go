@@ -47,7 +47,7 @@ func CookieMiddleware(next http.Handler) http.Handler {
 
 		// генерим новый userID и возвращаем в куке и Authorization хэдере
 		default:
-			userID := generateUserID()
+			userID := uuid.New().String()
 			logger.GetLogger().Debug("Сгенерирован новый userID", zap.String("userID", userID))
 			newCookie := createSignedCookie(userID)
 			http.SetCookie(w, &newCookie)
@@ -122,9 +122,7 @@ func verifyToken(token string) (string, bool) {
 
 	return userID, true
 }
-func generateUserID() string {
-	return fmt.Sprintf("%s", uuid.New())
-}
+
 func setUserIDToContext(r *http.Request, userID string) *http.Request {
 	ctx := context.WithValue(r.Context(), UserIDKey, userID)
 	return r.WithContext(ctx)
