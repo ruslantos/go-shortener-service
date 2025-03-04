@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
@@ -50,9 +51,6 @@ func CookieMiddleware(next http.Handler) http.Handler {
 			logger.GetLogger().Debug("Сгенерирован новый userID", zap.String("userID", userID))
 			newCookie := createSignedCookie(userID)
 			http.SetCookie(w, &newCookie)
-
-			//newAuthToken := createSignedAuthToken(userID)
-			//w.Header().Set("Authorization", fmt.Sprintf("Bearer %s", newAuthToken))
 
 			r = setUserIDToContext(r, userID)
 
@@ -125,7 +123,8 @@ func verifyToken(token string) (string, bool) {
 	return userID, true
 }
 func generateUserID() string {
-	return fmt.Sprintf("%d", time.Now().UnixNano())
+	id := uuid.New()
+	return fmt.Sprintf("%s", id.String())
 }
 func setUserIDToContext(r *http.Request, userID string) *http.Request {
 	ctx := context.WithValue(r.Context(), UserIDKey, userID)
