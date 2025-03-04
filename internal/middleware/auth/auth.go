@@ -72,7 +72,7 @@ func createSignedCookie(userID string) http.Cookie {
 		Path:     "/",
 		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
-		Secure:   true,
+		//Secure:   true,
 	}
 
 	return cookie
