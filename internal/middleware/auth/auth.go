@@ -123,8 +123,7 @@ func verifyToken(token string) (string, bool) {
 	return userID, true
 }
 func generateUserID() string {
-	id := uuid.New()
-	return fmt.Sprintf("%s", id.String())
+	return fmt.Sprintf("%s", uuid.New())
 }
 func setUserIDToContext(r *http.Request, userID string) *http.Request {
 	ctx := context.WithValue(r.Context(), UserIDKey, userID)
