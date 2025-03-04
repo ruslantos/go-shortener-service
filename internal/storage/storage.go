@@ -216,14 +216,14 @@ func (l LinksStorage) DeleteUserURLs(ctx context.Context, urls []service.Deleted
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.PrepareContext(ctx, "UPDATE links SET is_deleted = true WHERE short_url = $1")
+	stmt, err := tx.PrepareContext(ctx, "UPDATE links SET is_deleted = true WHERE short_url = $1 AND user_id = $2")
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
 	for _, deletedURL := range urls {
-		_, err = stmt.ExecContext(ctx, deletedURL.URLs)
+		_, err = stmt.ExecContext(ctx, deletedURL.URLs, deletedURL.UserID)
 		if err != nil {
 			return err
 		}
