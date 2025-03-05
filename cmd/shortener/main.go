@@ -13,7 +13,8 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/service"
 	"github.com/ruslantos/go-shortener-service/internal/storage"
-	"github.com/ruslantos/go-shortener-service/internal/storage/mapfile"
+	"github.com/ruslantos/go-shortener-service/internal/storage/filestorage"
+	"github.com/ruslantos/go-shortener-service/internal/storage/mapstorage"
 )
 
 func main() {
@@ -30,6 +31,8 @@ func main() {
 
 	cfg := storage.Load()
 	switch cfg.StorageType {
+	case "map":
+		linkStorage = mapstorage.NewMapStorage()
 	case "file":
 		fileProducer, err := fileClient.NewProducer(config.FileStoragePath)
 		if err != nil {
@@ -40,10 +43,10 @@ func main() {
 			logger.GetLogger().Fatal("cannot create file consumer", zap.Error(err))
 		}
 
-		linkStorage = mapfile.NewMapLinksStorage(fileConsumer, fileProducer)
+		linkStorage = filestorage.NewMapLinksStorage(fileConsumer, fileProducer)
 		err = linkStorage.InitStorage()
 		if err != nil {
-			logger.GetLogger().Fatal("cannot initialize link map", zap.Error(err))
+			logger.GetLogger().Fatal("cannot initialize file storage", zap.Error(err))
 		}
 	case "postgres":
 		db, err := sqlx.Open("pgx", config.DatabaseDsn)

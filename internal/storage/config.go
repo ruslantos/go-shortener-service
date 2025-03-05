@@ -21,5 +21,6 @@ func Load() Config {
 		return config
 	}
 
+	config.StorageType = "map"
 	return config
 }

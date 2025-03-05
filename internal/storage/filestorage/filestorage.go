@@ -1,4 +1,4 @@
-package mapfile
+package filestorage
 
 import (
 	"context"
@@ -83,7 +83,7 @@ func (l *LinksStorage) InitStorage() error {
 	for _, row := range rows {
 		l.linksMap[row.ShortURL] = models.Link{ShortURL: row.OriginalURL, OriginalURL: row.OriginalURL, CorrelationID: row.ID}
 	}
-	logger.GetLogger().Info("Link map initialized")
+	logger.GetLogger().Info("Link file storage initialized")
 	return nil
 }
 
