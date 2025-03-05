@@ -43,7 +43,7 @@ func main() {
 			logger.GetLogger().Fatal("cannot create file consumer", zap.Error(err))
 		}
 
-		linkStorage = filestorage.NewMapLinksStorage(fileConsumer, fileProducer)
+		linkStorage = filestorage.NewFileStorage(fileConsumer, fileProducer)
 		err = linkStorage.InitStorage()
 		if err != nil {
 			logger.GetLogger().Fatal("cannot initialize file storage", zap.Error(err))
