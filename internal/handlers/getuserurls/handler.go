@@ -14,6 +14,13 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/models"
 )
 
+type UserURLsResponse []UserURLs
+
+type UserURLs struct {
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
+}
+
 type linksService interface {
 	GetUserUrls(ctx context.Context) ([]models.Link, error)
 }

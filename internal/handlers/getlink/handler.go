@@ -37,7 +37,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		}
 		// ссылка не найдена
 		if errors.Is(err, internal_errors.ErrURLNotFound) {
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 		logger.GetLogger().Error("failed to get original_url", zap.Error(err))
