@@ -7,8 +7,11 @@ import (
 	"io"
 	"net/http"
 
+	"go.uber.org/zap"
+
 	"github.com/ruslantos/go-shortener-service/internal/config"
 	internal_errors "github.com/ruslantos/go-shortener-service/internal/errors"
+	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/models"
 )
 
@@ -49,6 +52,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, internal_errors.ErrURLAlreadyExists) {
 			respStatus = http.StatusConflict
 		} else {
+			logger.GetLogger().Error("add batch shorten error", zap.Error(err))
 			http.Error(w, "add batch shorten error", http.StatusInternalServerError)
 			return
 		}

@@ -32,6 +32,6 @@ func TestHandler_Handle_BadRequest(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	h.Handle(rr, req)
-	assert.Equal(t, http.StatusBadRequest, rr.Code)
-	assert.Equal(t, "failed to get long link: some error\n", rr.Body.String())
+	assert.Equal(t, http.StatusInternalServerError, rr.Code)
+	assert.Equal(t, "failed to get original_url: some error\n", rr.Body.String())
 }

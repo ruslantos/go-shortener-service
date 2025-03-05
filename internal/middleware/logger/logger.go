@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -17,34 +16,10 @@ var (
 )
 
 type responseWriter struct {
-	gin.ResponseWriter
-	body *bytes.Buffer
-	size int
-}
-
-func Logger(logger *zap.Logger) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		start := time.Now()
-
-		rw := &responseWriter{ResponseWriter: c.Writer, body: &bytes.Buffer{}}
-
-		logger.Info("Incoming request",
-			zap.String("method", c.Request.Method),
-			zap.String("path", c.Request.URL.Path),
-		)
-
-		c.Writer = rw
-		c.Next()
-
-		duration := time.Since(start)
-
-		logger.Info("Outgoing response",
-			zap.Int("status", c.Writer.Status()),
-			zap.Duration("duration", duration),
-			zap.Int("response_size", rw.Size()),
-			zap.String("response_body", rw.body.String()),
-		)
-	}
+	http.ResponseWriter
+	body   *bytes.Buffer
+	size   int
+	status int
 }
 
 func (rw *responseWriter) Size() int {
@@ -58,33 +33,48 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 	return n, err
 }
 
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.status = code
+	rw.ResponseWriter.WriteHeader(code)
+}
+
+func (rw *responseWriter) Status() int {
+	if rw.status == 0 {
+		return http.StatusOK
+	}
+	return rw.status
+}
+
 func LoggerChi(logger *zap.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
 
-			// Create a gin context to use the existing Logger middleware
-			ginContext, _ := gin.CreateTestContext(w)
-			ginContext.Request = r
+			rw := &responseWriter{ResponseWriter: w, body: &bytes.Buffer{}}
 
-			rw := &responseWriter{ResponseWriter: ginContext.Writer, body: &bytes.Buffer{}}
+			cookieHeader := r.Header.Get("Cookie")
 
-			logger.Info("Incoming request",
+			logger.Debug("Incoming request",
 				zap.String("method", r.Method),
 				zap.String("path", r.URL.Path),
+				zap.String("cookie", cookieHeader),
 			)
 
-			ginContext.Writer = rw
 			next.ServeHTTP(rw, r)
 
 			duration := time.Since(start)
 
-			logger.Info("Outgoing response",
+			var cookies []string
+			cookies = append(cookies, rw.Header()["Set-Cookie"]...)
+
+			logger.Debug("Outgoing response",
 				zap.Int("status", rw.Status()),
 				zap.Duration("duration", duration),
 				zap.Int("response_size", rw.Size()),
 				zap.String("response_body", rw.body.String()),
+				zap.Strings("cookies", cookies),
 			)
+
 		})
 	}
 }

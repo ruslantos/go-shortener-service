@@ -1,25 +1,20 @@
 package main
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/jmoiron/sqlx"
 
-	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 
 	"github.com/ruslantos/go-shortener-service/internal/config"
 	fileClient "github.com/ruslantos/go-shortener-service/internal/files"
-	"github.com/ruslantos/go-shortener-service/internal/handlers/getlink"
-	"github.com/ruslantos/go-shortener-service/internal/handlers/ping"
-	"github.com/ruslantos/go-shortener-service/internal/handlers/postlink"
-	"github.com/ruslantos/go-shortener-service/internal/handlers/shorten"
-	"github.com/ruslantos/go-shortener-service/internal/handlers/shortenbatch"
-	"github.com/ruslantos/go-shortener-service/internal/links"
-	"github.com/ruslantos/go-shortener-service/internal/middleware/compress"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
+	"github.com/ruslantos/go-shortener-service/internal/service"
 	"github.com/ruslantos/go-shortener-service/internal/storage"
-	"github.com/ruslantos/go-shortener-service/internal/storage/mapfile"
+	"github.com/ruslantos/go-shortener-service/internal/storage/filestorage"
+	"github.com/ruslantos/go-shortener-service/internal/storage/mapstorage"
 )
 
 func main() {
@@ -31,61 +26,49 @@ func main() {
 
 	config.ParseFlags()
 
-	var db *sqlx.DB
-	if config.IsDatabaseExist {
-		db, err = sqlx.Open("pgx", config.DatabaseDsn)
+	var linkService service.LinkService
+	var linkStorage service.LinksStorage
+
+	cfg := storage.Load()
+	switch cfg.StorageType {
+	case "map":
+		linkStorage = mapstorage.NewMapStorage()
+	case "file":
+		fileProducer, err := fileClient.NewProducer(config.FileStoragePath)
+		if err != nil {
+			logger.GetLogger().Fatal("cannot create file producer", zap.Error(err))
+		}
+		fileConsumer, err := fileClient.NewConsumer(config.FileStoragePath)
+		if err != nil {
+			logger.GetLogger().Fatal("cannot create file consumer", zap.Error(err))
+		}
+
+		linkStorage = filestorage.NewFileStorage(fileConsumer, fileProducer)
+		err = linkStorage.InitStorage()
+		if err != nil {
+			logger.GetLogger().Fatal("cannot initialize file storage", zap.Error(err))
+		}
+	case "postgres":
+		db, err := sqlx.Open("pgx", config.DatabaseDsn)
 		if err != nil {
 			logger.GetLogger().Fatal("cannot connect to database", zap.Error(err))
 		}
 		defer db.Close()
-	}
 
-	var fileProducer *fileClient.Producer
-	var fileConsumer *fileClient.Consumer
-	if config.IsFileExist {
-		fileProducer, err = fileClient.NewProducer(config.FileStoragePath)
-		if err != nil {
-			logger.GetLogger().Fatal("cannot create file producer", zap.Error(err))
-		}
-
-		fileConsumer, err = fileClient.NewConsumer(config.FileStoragePath)
-		if err != nil {
-			logger.GetLogger().Fatal("cannot create file consumer", zap.Error(err))
-		}
-	}
-
-	var linkService links.LinkService
-
-	if config.IsDatabaseExist {
-		linksRepo := storage.NewLinksStorage(db)
-		err = linksRepo.InitStorage()
+		linkStorage = storage.NewLinksStorage(db)
+		err = linkStorage.InitStorage()
 		if err != nil {
 			logger.GetLogger().Fatal("cannot initialize database", zap.Error(err))
 		}
-		linkService = *links.NewLinkService(linksRepo)
-	} else {
-		linksRepo := mapfile.NewMapLinksStorage(fileConsumer, fileProducer)
-		err = linksRepo.InitStorage()
-		if err != nil {
-			logger.GetLogger().Fatal("cannot initialize link map", zap.Error(err))
-		}
-		linkService = *links.NewLinkService(linksRepo)
-
+	default:
+		logger.GetLogger().Fatal("unknown storage type", zap.String("storageType", cfg.StorageType))
 	}
 
-	postLinkHandler := postlink.New(&linkService)
-	getLinkHandler := getlink.New(&linkService)
-	shortenHandler := shorten.New(&linkService)
-	pingHandler := ping.New(&linkService)
-	shortenBatchHandler := shortenbatch.New(&linkService)
+	linkService = *service.NewLinkService(linkStorage)
 
-	r := chi.NewRouter()
-	r.Use(compress.GzipMiddlewareWriter, compress.GzipMiddlewareReader, logger.LoggerChi(log))
-	r.Post("/", postLinkHandler.Handle)
-	r.Get("/{link}", getLinkHandler.Handle)
-	r.Post("/api/shorten", shortenHandler.Handle)
-	r.Get("/ping", pingHandler.Handle)
-	r.Post("/api/shorten/batch", shortenBatchHandler.Handle)
+	r := setupRouter(linkService, log)
+
+	go linkService.StartDeleteWorker(context.Background())
 
 	err = http.ListenAndServe(config.FlagServerPort, r)
 	if err != nil {
