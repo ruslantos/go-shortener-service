@@ -72,7 +72,7 @@ func ParseFlags() {
 		IsFileExist = false
 	}
 
-	os.Setenv("DATABASE_DSN", "user=videos password=password dbname=shortenerdatabase sslmode=disable")
+	//os.Setenv("DATABASE_DSN", "user=videos password=password dbname=shortenerdatabase sslmode=disable")
 
 	// проверка конфигурации БД
 	switch {
