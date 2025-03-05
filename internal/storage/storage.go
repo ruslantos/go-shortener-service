@@ -148,39 +148,6 @@ func (l LinksStorage) InitStorage() error {
 	return nil
 }
 
-func (l LinksStorage) UpdateUser(ctx context.Context, links []models.Link, userID string) error {
-	if len(links) == 0 {
-		return nil
-	}
-
-	tx, err := l.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err != nil {
-			_ = tx.Rollback()
-		} else {
-			err = tx.Commit()
-		}
-	}()
-
-	stmt, err := tx.PrepareContext(ctx, "INSERT INTO users (short_url, user_id) VALUES ($1, $2)")
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	for _, link := range links {
-		_, err = stmt.ExecContext(ctx, link.ShortURL, userID)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func (l LinksStorage) GetUserLinks(ctx context.Context, userID string) ([]models.Link, error) {
 	var links []models.Link
 	rows, err := l.db.QueryContext(ctx,

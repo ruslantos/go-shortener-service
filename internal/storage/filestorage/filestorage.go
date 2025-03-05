@@ -28,7 +28,7 @@ type LinksStorage struct {
 	fileProducer FileProducer
 }
 
-func NewMapLinksStorage(fileConsumer FileConsumer, fileProducer FileProducer) *LinksStorage {
+func NewFileStorage(fileConsumer FileConsumer, fileProducer FileProducer) *LinksStorage {
 	return &LinksStorage{
 		linksMap:     make(map[string]models.Link),
 		mutex:        &sync.Mutex{},

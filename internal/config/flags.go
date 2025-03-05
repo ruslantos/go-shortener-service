@@ -30,7 +30,7 @@ type NetAddress struct {
 func ParseFlags() {
 	flag.StringVar(&FlagServerPort, "a", ":8080", "address and port to run server")
 	flag.StringVar(&FlagLogLevel, "l", "debug", "log level")
-	flag.StringVar(&FileStoragePath, "f", "./tmp/links", "files storage path")
+	flag.StringVar(&FileStoragePath, "f", "", "files storage path")
 	flag.StringVar(&DatabaseDsn, "d", "", "database dsn")
 
 	addr := new(NetAddress)
@@ -90,6 +90,7 @@ func ParseFlags() {
 		zap.String("STORAGE_PATH", FileStoragePath),
 		zap.String("DATABASE_DSN", DatabaseDsn),
 		zap.Boolp("IsDatabaseExist", &IsDatabaseExist),
+		zap.Boolp("IsFileExist", &IsFileExist),
 	)
 }
 
