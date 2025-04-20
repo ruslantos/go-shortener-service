@@ -4,6 +4,7 @@ import (
 	"compress/gzip"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -82,16 +83,24 @@ func GzipMiddlewareWriter(h http.Handler) http.Handler {
 		acceptEncoding := r.Header.Get("Accept-Encoding")
 		supportsGzip := strings.Contains(acceptEncoding, "gzip")
 		isContentTypeHeadersExists := r.Header.Get("Content-Type") == "application/json" || r.Header.Get("Content-Type") == "text/html"
-		if supportsGzip && isContentTypeHeadersExists {
-			// оборачиваем оригинальный http.ResponseWriter новым с поддержкой сжатия
+
+		// Добавляем проверку размера контента
+		contentLength := r.Header.Get("Content-Length")
+		if contentLength != "" {
+			if size, err := strconv.Atoi(contentLength); err == nil && size > 1024 && size < 10*1024*1024 { // Сжимаем только от 1KB до 10MB
+				if supportsGzip && isContentTypeHeadersExists {
+					cw := newCompressWriter(w)
+					ow = cw
+					defer cw.Close()
+				}
+			}
+		} else if supportsGzip && isContentTypeHeadersExists {
+			// Если Content-Length не указан, но клиент поддерживает gzip
 			cw := newCompressWriter(w)
-			// меняем оригинальный http.ResponseWriter на новый
 			ow = cw
-			// не забываем отправить клиенту все сжатые данные после завершения middleware
 			defer cw.Close()
 		}
 
-		// передаём управление хендлеру
 		h.ServeHTTP(ow, r)
 	})
 }
