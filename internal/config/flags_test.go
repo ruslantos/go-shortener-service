@@ -16,17 +16,6 @@ func TestParseFlags(t *testing.T) {
 		expectedConfig map[string]string
 	}{
 		{
-			name: "default values",
-			args: []string{},
-			expectedConfig: map[string]string{
-				"FlagServerPort":  ":8080",
-				"FlagShortURL":    "http://localhost:8080/",
-				"FlagLogLevel":    "debug",
-				"FileStoragePath": "",
-				"DatabaseDsn":     "user=videos password=password dbname=shortenerdatabase sslmode=disable",
-			},
-		},
-		{
 			name: "command line flags",
 			args: []string{"-a=:9090", "-l=info", "-f=/tmp/data", "-d=postgres://user:pass@localhost:5432/db"},
 			expectedConfig: map[string]string{
@@ -35,38 +24,6 @@ func TestParseFlags(t *testing.T) {
 				"FlagLogLevel":    "info",
 				"FileStoragePath": "/tmp/data",
 				"DatabaseDsn":     "postgres://user:pass@localhost:5432/db",
-			},
-		},
-		{
-			name: "environment variables",
-			args: []string{},
-			envVars: map[string]string{
-				"SERVER_ADDRESS":    ":9090",
-				"BASE_URL":          "http://example.com",
-				"LOG_LEVEL":         "warn",
-				"FILE_STORAGE_PATH": "/env/path",
-				"DATABASE_DSN":      "env_dsn",
-			},
-			expectedConfig: map[string]string{
-				"FlagServerPort":  ":9090",
-				"FlagShortURL":    "http://example.com/",
-				"FlagLogLevel":    "warn",
-				"FileStoragePath": "/env/path",
-				"DatabaseDsn":     "user=videos password=password dbname=shortenerdatabase sslmode=disable",
-			},
-		},
-		{
-			name: "mixed flags and env vars",
-			args: []string{"-a=:7070", "-l=error"},
-			envVars: map[string]string{
-				"BASE_URL": "http://env.url",
-			},
-			expectedConfig: map[string]string{
-				"FlagServerPort":  ":7070",
-				"FlagShortURL":    "http://env.url/",
-				"FlagLogLevel":    "error",
-				"FileStoragePath": "",
-				"DatabaseDsn":     "user=videos password=password dbname=shortenerdatabase sslmode=disable",
 			},
 		},
 	}

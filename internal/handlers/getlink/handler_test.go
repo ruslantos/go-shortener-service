@@ -41,7 +41,7 @@ func TestHandler_Handle_BadRequest(t *testing.T) {
 }
 
 // Пример использования обработчика для успешного редиректа
-func ExampleHandler_Success() {
+func ExampleHandler_success() {
 	// Создаем мок сервиса для успешного случая
 	mockService := &mockLinksService{
 		getFunc: func(ctx context.Context, shortLink string) (string, error) {
@@ -72,7 +72,7 @@ func ExampleHandler_Success() {
 }
 
 // Пример использования обработчика для случая, когда ссылка не найдена
-func ExampleHandler_NotFound() {
+func ExampleHandler_notFound() {
 	// Создаем мок сервиса для случая, когда ссылка не найдена
 	mockService := &mockLinksService{
 		getFunc: func(ctx context.Context, shortLink string) (string, error) {
@@ -101,7 +101,7 @@ func ExampleHandler_NotFound() {
 }
 
 // Пример использования обработчика для случая, когда ссылка удалена
-func ExampleHandler_Gone() {
+func ExampleHandler_gone() {
 	// Создаем мок сервиса для случая, когда ссылка удалена
 	mockService := &mockLinksService{
 		getFunc: func(ctx context.Context, shortLink string) (string, error) {
@@ -130,7 +130,7 @@ func ExampleHandler_Gone() {
 }
 
 // Пример использования обработчика для внутренней ошибки сервера
-func ExampleHandler_InternalError() {
+func ExampleHandler_internalError() {
 	// Создаем мок сервиса для случая внутренней ошибки сервера
 	mockService := &mockLinksService{
 		getFunc: func(ctx context.Context, shortLink string) (string, error) {

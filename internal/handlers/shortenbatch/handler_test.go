@@ -53,7 +53,7 @@ func TestHandler_Handle_Success(t *testing.T) {
 }
 
 // Пример использования обработчика для успешного добавления пакета ссылок
-func ExampleHandler_Success() {
+func ExampleHandler_success() {
 	// Инициализируем конфигурацию
 	config.FlagShortURL = "http://short.url/"
 
@@ -95,7 +95,7 @@ func ExampleHandler_Success() {
 }
 
 // Пример использования обработчика для случая, когда ссылка уже существует
-func ExampleHandler_Conflict() {
+func ExampleHandler_conflict() {
 	// Инициализируем конфигурацию
 	config.FlagShortURL = "http://short.url/"
 
@@ -131,7 +131,7 @@ func ExampleHandler_Conflict() {
 }
 
 // Пример использования обработчика для случая внутренней ошибки сервера
-func ExampleHandler_InternalError() {
+func ExampleHandler_internalError() {
 	// Инициализируем конфигурацию
 	config.FlagShortURL = "http://short.url/"
 
@@ -169,7 +169,7 @@ func ExampleHandler_InternalError() {
 }
 
 // Пример использования обработчика для случая, когда тело запроса пустое
-func ExampleHandler_EmptyBody() {
+func ExampleHandler_emptyBody() {
 	// Создаем мок сервиса (не используется в этом случае)
 	mockService := &mockLinksService{}
 
@@ -196,7 +196,7 @@ func ExampleHandler_EmptyBody() {
 }
 
 // Пример использования обработчика для случая ошибки чтения тела запроса
-func ExampleHandler_ReadBodyError() {
+func ExampleHandler_readBodyError() {
 	// Создаем мок сервиса (не используется в этом случае)
 	mockService := &mockLinksService{}
 
@@ -223,7 +223,7 @@ func ExampleHandler_ReadBodyError() {
 }
 
 // Пример использования обработчика для случая ошибки распаковки JSON
-func ExampleHandler_UnmarshalError() {
+func ExampleHandler_unmarshalError() {
 	// Создаем мок сервиса (не используется в этом случае)
 	mockService := &mockLinksService{}
 

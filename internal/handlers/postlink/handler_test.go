@@ -60,7 +60,7 @@ func TestHandler_Handle_ErrorLinkService(t *testing.T) {
 }
 
 // Пример использования обработчика для успешного добавления ссылки
-func ExampleHandler_Success() {
+func ExampleHandler_success() {
 	// Инициализируем конфигурацию
 	config.FlagShortURL = "http://short.url/"
 
@@ -94,7 +94,7 @@ func ExampleHandler_Success() {
 }
 
 // Пример использования обработчика для случая, когда ссылка уже существует
-func ExampleHandler_Conflict() {
+func ExampleHandler_conflict() {
 	// Инициализируем конфигурацию
 	config.FlagShortURL = "http://short.url/"
 
@@ -126,7 +126,7 @@ func ExampleHandler_Conflict() {
 }
 
 // Пример использования обработчика для случая внутренней ошибки сервера
-func ExampleHandler_InternalError() {
+func ExampleHandler_internalError() {
 	// Инициализируем конфигурацию
 	config.FlagShortURL = "http://short.url/"
 
@@ -160,7 +160,7 @@ func ExampleHandler_InternalError() {
 }
 
 // Пример использования обработчика для случая, когда тело запроса пустое
-func ExampleHandler_EmptyBody() {
+func ExampleHandler_emptyBody() {
 	// Создаем мок сервиса (не используется в этом случае)
 	mockService := &mockLinksService{}
 
@@ -187,7 +187,7 @@ func ExampleHandler_EmptyBody() {
 }
 
 // Пример использования обработчика для случая ошибки чтения тела запроса
-func ExampleHandler_ReadBodyError() {
+func ExampleHandler_readBodyError() {
 	// Создаем мок сервиса (не используется в этом случае)
 	mockService := &mockLinksService{}
 

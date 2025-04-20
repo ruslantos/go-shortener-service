@@ -9,7 +9,7 @@ import (
 )
 
 // Пример использования обработчика для успешного пинга
-func ExampleHandler_Success() {
+func ExampleHandler_success() {
 	// Создаем мок сервиса для успешного случая
 	mockService := &mockLinksService{
 		pingFunc: func(ctx context.Context) error {
@@ -38,7 +38,7 @@ func ExampleHandler_Success() {
 }
 
 // Пример использования обработчика для случая внутренней ошибки сервера
-func ExampleHandler_InternalError() {
+func ExampleHandler_internalError() {
 	// Создаем мок сервиса для случая внутренней ошибки сервера
 	mockService := &mockLinksService{
 		pingFunc: func(ctx context.Context) error {

@@ -216,7 +216,7 @@ func ExampleHandler_ReadBodyError() {
 }
 
 // Пример использования обработчика для случая ошибки распаковки JSON
-func ExampleHandler_UnmarshalError() {
+func ExampleHandler_unmarshalError() {
 	// Создаем мок сервиса (не используется в этом случае)
 	mockService := &mockLinksService{}
 

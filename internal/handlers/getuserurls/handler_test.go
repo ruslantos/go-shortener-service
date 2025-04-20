@@ -13,7 +13,7 @@ import (
 )
 
 // Пример использования обработчика для успешного получения ссылок пользователя
-func ExampleHandler_Success() {
+func ExampleHandle() {
 	// Инициализируем конфигурацию
 	config.FlagShortURL = "http://short.url/"
 
@@ -52,7 +52,7 @@ func ExampleHandler_Success() {
 }
 
 // Пример использования обработчика для случая, когда пользователь не авторизован
-func ExampleHandler_Unauthorized() {
+func ExampleHandler_unauthorized() {
 	// Создаем мок сервиса (не используется в этом случае)
 	mockService := &mockLinksService{}
 
@@ -79,7 +79,7 @@ func ExampleHandler_Unauthorized() {
 }
 
 // Пример использования обработчика для случая внутренней ошибки сервера
-func ExampleHandler_InternalError() {
+func ExampleHandler_internalError() {
 	// Инициализируем конфигурацию
 	config.FlagShortURL = "http://short.url/"
 
