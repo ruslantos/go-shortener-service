@@ -15,6 +15,7 @@ type compressWriter struct {
 	zw *gzip.Writer
 }
 
+// newCompressWriter создает новый compressWriter для сжатия данных.
 func newCompressWriter(w http.ResponseWriter) *compressWriter {
 	return &compressWriter{
 		w:  w,
@@ -50,6 +51,7 @@ type compressReader struct {
 	zr *gzip.Reader
 }
 
+// newCompressReader создает новый compressReader для декомпрессии данных.
 func newCompressReader(r io.ReadCloser) (*compressReader, error) {
 	zr, err := gzip.NewReader(r)
 	if err != nil {
@@ -73,6 +75,7 @@ func (c *compressReader) Close() error {
 	return c.zr.Close()
 }
 
+// GzipMiddlewareWriter middleware для сжатия ответов сервера с использованием gzip.
 func GzipMiddlewareWriter(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// по умолчанию устанавливаем оригинальный http.ResponseWriter как тот,
@@ -105,6 +108,7 @@ func GzipMiddlewareWriter(h http.Handler) http.Handler {
 	})
 }
 
+// GzipMiddlewareReader middleware для декомпрессии запросов клиента с использованием gzip.
 func GzipMiddlewareReader(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// по умолчанию устанавливаем оригинальный http.ResponseWriter как тот,

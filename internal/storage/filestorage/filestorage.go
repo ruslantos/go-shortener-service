@@ -13,14 +13,17 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/service"
 )
 
+// FileConsumer определяет интерфейс для чтения событий из файла.
 type FileConsumer interface {
 	ReadEvents() ([]*fileJob.Event, error)
 }
 
+// FileProducer определяет интерфейс для записи событий в файл.
 type FileProducer interface {
 	WriteEvent(event *fileJob.Event) error
 }
 
+// LinksStorage реализует хранилище ссылок с использованием файлов.
 type LinksStorage struct {
 	linksMap     map[string]models.Link
 	mutex        *sync.Mutex
@@ -28,6 +31,7 @@ type LinksStorage struct {
 	fileProducer FileProducer
 }
 
+// NewFileStorage создает новый экземпляр LinksStorage.
 func NewFileStorage(fileConsumer FileConsumer, fileProducer FileProducer) *LinksStorage {
 	return &LinksStorage{
 		linksMap:     make(map[string]models.Link),
@@ -37,6 +41,7 @@ func NewFileStorage(fileConsumer FileConsumer, fileProducer FileProducer) *Links
 	}
 }
 
+// AddLink добавляет новую ссылку в хранилище и записывает её в файл.
 func (l *LinksStorage) AddLink(ctx context.Context, link models.Link, userID string) (models.Link, error) {
 	l.addLinksToMap([]models.Link{link})
 
@@ -48,6 +53,7 @@ func (l *LinksStorage) AddLink(ctx context.Context, link models.Link, userID str
 	return link, nil
 }
 
+// AddLinkBatch добавляет пакет ссылок в хранилище и записывает их в файл.
 func (l *LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link, userID string) ([]models.Link, error) {
 	l.addLinksToMap(links)
 
@@ -60,12 +66,14 @@ func (l *LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link, us
 	return links, nil
 }
 
+// GetLink возвращает ссылку по её короткому идентификатору.
 func (l *LinksStorage) GetLink(ctx context.Context, value string) (models.Link, error) {
 	result := l.linksMap[value]
 	link := models.Link{OriginalURL: result.OriginalURL}
 	return link, nil
 }
 
+// addLinksToMap добавляет ссылки в карту ссылок.
 func (l *LinksStorage) addLinksToMap(links []models.Link) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
@@ -75,6 +83,7 @@ func (l *LinksStorage) addLinksToMap(links []models.Link) {
 	}
 }
 
+// InitStorage инициализирует хранилище, загружая данные из файла.
 func (l *LinksStorage) InitStorage() error {
 	rows, err := l.fileConsumer.ReadEvents()
 	if err != nil {
@@ -87,6 +96,7 @@ func (l *LinksStorage) InitStorage() error {
 	return nil
 }
 
+// writeFile записывает событие в файл.
 func (l *LinksStorage) writeFile(link models.Link) error {
 	event := &fileJob.Event{
 		ID:          link.CorrelationID,
@@ -100,10 +110,12 @@ func (l *LinksStorage) writeFile(link models.Link) error {
 	return nil
 }
 
+// Ping проверяет соединение с хранилищем (в данном случае всегда возвращает nil).
 func (l LinksStorage) Ping(context.Context) error {
 	return nil
 }
 
+// GetUserLinks возвращает все ссылки для указанного пользователя.
 func (l *LinksStorage) GetUserLinks(ctx context.Context, userID string) ([]models.Link, error) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
@@ -118,6 +130,7 @@ func (l *LinksStorage) GetUserLinks(ctx context.Context, userID string) ([]model
 	return userLinks, nil
 }
 
+// DeleteUserURLs удаляет указанные ссылки для пользователя.
 func (l *LinksStorage) DeleteUserURLs(ctx context.Context, urls []service.DeletedURLs) error {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()

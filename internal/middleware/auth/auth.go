@@ -26,6 +26,7 @@ const (
 	UserIDKey contextKey = "userID"
 )
 
+// CookieMiddleware middleware для обработки аутентификации через куки и Authorization header.
 func CookieMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("user")
@@ -61,6 +62,8 @@ func CookieMiddleware(next http.Handler) http.Handler {
 }
 
 // методы для Cookie
+
+// createSignedCookie создает подписанную куку с userID.
 func createSignedCookie(userID string) http.Cookie {
 	cookieValue := createToken(userID)
 
@@ -74,6 +77,8 @@ func createSignedCookie(userID string) http.Cookie {
 
 	return cookie
 }
+
+// verifyCookie проверяет подписанную куку и возвращает userID и флаг валидности.
 func verifyCookie(cookie *http.Cookie) (string, bool) {
 	if cookie == nil {
 		return "", false
@@ -83,9 +88,13 @@ func verifyCookie(cookie *http.Cookie) (string, bool) {
 }
 
 // методы для Auth хэдера
+
+// createSignedAuthToken создает подписанный Authorization токен с userID.
 func createSignedAuthToken(userID string) string {
 	return createToken(userID)
 }
+
+// verifyAuthToken проверяет Authorization токен и возвращает userID и флаг валидности.
 func verifyAuthToken(token string) (string, bool) {
 	authToken := strings.SplitN(token, " ", 2)
 	if len(authToken) != 2 && authToken[0] != "Bearer" {
@@ -96,6 +105,8 @@ func verifyAuthToken(token string) (string, bool) {
 }
 
 // общие методы
+
+// createToken создает подписанную строку с userID.
 func createToken(userID string) string {
 	h := hmac.New(sha256.New, secretKey)
 	h.Write([]byte(userID))
@@ -103,6 +114,8 @@ func createToken(userID string) string {
 
 	return fmt.Sprintf("%s|%s", userID, signature)
 }
+
+// verifyToken проверяет подписанную строку и возвращает userID и флаг валидности.
 func verifyToken(token string) (string, bool) {
 	parts := strings.SplitN(token, "|", 2)
 	if len(parts) != 2 {
@@ -123,6 +136,7 @@ func verifyToken(token string) (string, bool) {
 	return userID, true
 }
 
+// setUserIDToContext устанавливает userID в контекст запроса.
 func setUserIDToContext(r *http.Request, userID string) *http.Request {
 	ctx := context.WithValue(r.Context(), UserIDKey, userID)
 	return r.WithContext(ctx)

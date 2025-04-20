@@ -31,20 +31,24 @@ type LinksStorage interface {
 	InitStorage() error
 }
 
+// LinkService предоставляет сервис для работы с ссылками.
 type LinkService struct {
 	linksStorage LinksStorage
 	deleteChan   chan DeletedURLs
 }
 
+// Config содержит конфигурационные параметры для сервиса.
 type Config struct {
 	StorageType string
 }
 
+// DeletedURLs представляет структуру для удаления ссылок.
 type DeletedURLs struct {
 	URLs   string
 	UserID string
 }
 
+// NewLinkService создает новый экземпляр LinkService.
 func NewLinkService(linksStorage LinksStorage) *LinkService {
 	return &LinkService{
 		linksStorage: linksStorage,
@@ -52,6 +56,7 @@ func NewLinkService(linksStorage LinksStorage) *LinkService {
 	}
 }
 
+// Get возвращает оригинальную ссылку по короткому идентификатору.
 func (l *LinkService) Get(ctx context.Context, shortLink string) (string, error) {
 	v, err := l.linksStorage.GetLink(ctx, shortLink)
 	if err != nil {
@@ -66,6 +71,7 @@ func (l *LinkService) Get(ctx context.Context, shortLink string) (string, error)
 	return v.OriginalURL, nil
 }
 
+// Add добавляет новую ссылку в хранилище.
 func (l *LinkService) Add(ctx context.Context, long string) (string, error) {
 	userID := getUserIDFromContext(ctx)
 
@@ -82,6 +88,7 @@ func (l *LinkService) Add(ctx context.Context, long string) (string, error) {
 	return link.ShortURL, nil
 }
 
+// AddBatch добавляет пакет ссылок в хранилище.
 func (l *LinkService) AddBatch(ctx context.Context, links []models.Link) ([]models.Link, error) {
 	for i := range links {
 		links[i].ShortURL = uuid.New().String()
@@ -99,10 +106,12 @@ func (l *LinkService) AddBatch(ctx context.Context, links []models.Link) ([]mode
 	return linksSaved, nil
 }
 
+// Ping проверяет соединение с хранилищем.
 func (l *LinkService) Ping(ctx context.Context) error {
 	return l.linksStorage.Ping(ctx)
 }
 
+// GetUserUrls возвращает все ссылки для указанного пользователя.
 func (l *LinkService) GetUserUrls(ctx context.Context) ([]models.Link, error) {
 	userID := getUserIDFromContext(ctx)
 
@@ -113,6 +122,7 @@ func (l *LinkService) GetUserUrls(ctx context.Context) ([]models.Link, error) {
 	return v, nil
 }
 
+// StartDeleteWorker запускает воркер для удаления ссылок.
 func (l *LinkService) StartDeleteWorker(ctx context.Context) {
 	logger.GetLogger().Info("start delete worker")
 
@@ -153,10 +163,12 @@ func (l *LinkService) StartDeleteWorker(ctx context.Context) {
 	}
 }
 
+// ConsumeDeleteURLs добавляет ссылку в канал для удаления.
 func (l *LinkService) ConsumeDeleteURLs(data DeletedURLs) {
 	l.deleteChan <- data
 }
 
+// getUserIDFromContext извлекает userID из контекста.
 func getUserIDFromContext(ctx context.Context) string {
 	userID, ok := ctx.Value(auth.UserIDKey).(string)
 	if !ok {

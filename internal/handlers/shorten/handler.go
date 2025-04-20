@@ -14,19 +14,23 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 )
 
+// linksService определяет интерфейс для работы с ссылками.
 type linksService interface {
 	Add(ctx context.Context, long string) (string, error)
 }
 
+// Handler представляет обработчик HTTP-запросов для создания коротких ссылок.
 type Handler struct {
 	linksService linksService
 }
 
+// New создает новый экземпляр Handler с заданным linksService.
 func New(linksService linksService) *Handler {
 	return &Handler{linksService: linksService}
 }
 
 // Handle обрабатывает HTTP-запрос для получения оригинальной ссылки по короткому идентификатору.
+// В данном случае метод используется для создания новой короткой ссылки из переданной оригинальной ссылки.
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	bodyRaw, err := io.ReadAll(r.Body)
 	if err != nil {
