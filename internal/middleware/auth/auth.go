@@ -22,10 +22,8 @@ var (
 
 type contextKey string
 
-const (
-	// UserIDKey ключ для хранения userID в контексте запроса.
-	UserIDKey contextKey = "userID"
-)
+// UserIDKey ключ для хранения userID в контексте запроса.
+const UserIDKey contextKey = "userID"
 
 // CookieMiddleware middleware для обработки аутентификации через куки и Authorization header.
 func CookieMiddleware(next http.Handler) http.Handler {
