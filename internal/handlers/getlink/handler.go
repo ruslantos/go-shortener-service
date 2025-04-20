@@ -25,6 +25,7 @@ func New(linksService linksService) *Handler {
 	return &Handler{linksService: linksService}
 }
 
+// Handle обрабатывает запросы для получения оригинальной ссылки по короткому идентификатору.
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Path
 

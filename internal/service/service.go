@@ -13,13 +13,21 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/models"
 )
 
+// LinksStorage определяет интерфейс для работы с хранилищем ссылок.
 type LinksStorage interface {
+	// AddLink добавляет новую ссылку в хранилище для указанного пользователя.
 	AddLink(ctx context.Context, link models.Link, userID string) (models.Link, error)
+	// GetLink возвращает ссылку по её короткому идентификатору.
 	GetLink(ctx context.Context, value string) (models.Link, error)
+	// Ping проверяет соединение с хранилищем.
 	Ping(ctx context.Context) error
+	// AddLinkBatch добавляет пакет ссылок в хранилище для указанного пользователя.
 	AddLinkBatch(ctx context.Context, links []models.Link, userID string) ([]models.Link, error)
+	// GetUserLinks возвращает все ссылки для указанного пользователя.
 	GetUserLinks(ctx context.Context, userID string) ([]models.Link, error)
+	// DeleteUserURLs удаляет указанные ссылки для пользователя.
 	DeleteUserURLs(ctx context.Context, urls []DeletedURLs) error
+	// InitStorage инициализирует хранилище.
 	InitStorage() error
 }
 

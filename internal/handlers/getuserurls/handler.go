@@ -33,6 +33,7 @@ func New(linksService linksService) *Handler {
 	return &Handler{linksService: linksService}
 }
 
+// Handle обрабатывает HTTP-запрос для получения оригинальной ссылки по короткому идентификатору.
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	_, ok := r.Context().Value(auth.UserIDKey).(string)
 	if !ok {

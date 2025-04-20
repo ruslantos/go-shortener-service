@@ -25,6 +25,7 @@ func New(service linkService) *Handler {
 	return &Handler{service: service}
 }
 
+// Handle Обработка запроса на удаление пользовательских URL
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	bodyRaw, err := io.ReadAll(r.Body)
 	if err != nil {
