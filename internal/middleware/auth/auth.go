@@ -23,6 +23,7 @@ var (
 type contextKey string
 
 const (
+	// UserIDKey ключ для хранения userID в контексте запроса.
 	UserIDKey contextKey = "userID"
 )
 
