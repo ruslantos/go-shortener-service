@@ -13,14 +13,17 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 )
 
+// linksService интерфейс для сервиса, который обрабатывает получение оригинальной ссылки по короткому идентификатору.
 type linksService interface {
 	Get(ctx context.Context, shortLink string) (string, error)
 }
 
+// Handler обработчик для получения оригинальной ссылки по короткому идентификатору.
 type Handler struct {
 	linksService linksService
 }
 
+// New создаёт новый обработчик для получения оригинальной ссылки по короткому идентификатору.
 func New(linksService linksService) *Handler {
 	return &Handler{linksService: linksService}
 }
