@@ -14,21 +14,26 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/models"
 )
 
+// UserURLsResponse тип для ответа с пользовательскими URL.
 type UserURLsResponse []UserURLs
 
+// UserURLs структура для представления пользовательского URL.
 type UserURLs struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 }
 
+// linksService интерфейс для сервиса, который обрабатывает получение пользовательских URL.
 type linksService interface {
 	GetUserUrls(ctx context.Context) ([]models.Link, error)
 }
 
+// Handler обработчик для получения пользовательских URL.
 type Handler struct {
 	linksService linksService
 }
 
+// New создаёт новый обработчик для получения пользовательских URL.
 func New(linksService linksService) *Handler {
 	return &Handler{linksService: linksService}
 }
@@ -64,6 +69,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
+// prepareResponse преобразует срез ссылок в формат ответа.
 func prepareResponse(links []models.Link) UserURLsResponse {
 	resp := UserURLsResponse{}
 	for _, link := range links {
