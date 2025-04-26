@@ -1,13 +1,18 @@
 name: Code Coverage
 
+#on:
+#  pull_request:
+#  push:
+#    branches:
+#      - main
 on:
-  pull_request:
-  push:
-    branches:
-      - main
-
+  workflow_run:
+    workflows: ["autotests"]  # Запускается после завершения autotests
+    types:
+      - completed
 jobs:
   coverage:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     container: golang:1.23
 
@@ -25,10 +30,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Setup Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
           go-version: '1.23'
 
@@ -57,7 +62,7 @@ jobs:
           go tool cover -html=coverage/coverage.out -o coverage/coverage.html
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: cmd/shortener/coverage
