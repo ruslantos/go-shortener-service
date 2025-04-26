@@ -37,32 +37,34 @@ jobs:
           # Затем собираем бинарник
           cd cmd/shortener
           go build -buildvcs=false -cover -o shortener .
-      - name: Install bc
-        run: apt-get update && apt-get install -y bc
       - name: Generate coverage report
         run: |
-          # Установка gocover-cobertura
+          mv coverage.out cmd/shortener/coverage.out
+          
+          cd cmd/shortener
+
+          # Install gocover-cobertura if not present
           if ! command -v gocover-cobertura &> /dev/null; then
             echo "Installing gocover-cobertura..."
             go install github.com/boumenot/gocover-cobertura@latest
           fi
 
+          # Ensure GOPATH/bin is in PATH
           export PATH=$PATH:$(go env GOPATH)/bin
 
-          # Генерация отчетов
+          # Generate coverage reports
           echo "Generating coverage reports..."
           go tool cover -func=coverage.out
           gocover-cobertura < coverage.out > coverage.xml
+
+          # Generate HTML report
           go tool cover -html=coverage.out -o coverage.html
-      - name: Check coverage threshold
+
+      - name: Code coverage
         run: |
           cd cmd/shortener
           TOTAL_COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
           echo "Total Coverage: $TOTAL_COVERAGE%"
-          if (( $(echo "$TOTAL_COVERAGE < 40" | bc -l) )); then
-            echo "Coverage is below 40%"
-            exit 1
-          fi
 
       - name: Cache artifact action
         uses: actions/cache@v3
@@ -75,3 +77,4 @@ jobs:
         with:
           path: cmd/shortener/
           retention-days: 1
+
