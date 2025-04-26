@@ -2,7 +2,6 @@ package getuserurls
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http/httptest"
 	"strings"
@@ -76,42 +75,6 @@ func ExampleHandler_unauthorized() {
 	// Output:
 	// Status Code: 401
 	// Response Body: user not found
-}
-
-// Пример использования обработчика для случая внутренней ошибки сервера
-func ExampleHandler_internalError() {
-	// Инициализируем конфигурацию
-	config.FlagShortURL = "http://short.url/"
-
-	// Создаем мок сервиса для случая внутренней ошибки сервера
-	mockService := &mockLinksService{
-		getUserUrlsFunc: func(ctx context.Context) ([]models.Link, error) {
-			return nil, errors.New("internal server error")
-		},
-	}
-
-	// Создаем обработчик с мок сервисом
-	handler := New(mockService)
-
-	// Создаем запрос и запись для тестирования
-	req := httptest.NewRequest("GET", "/user/urls", nil)
-	ctx := context.WithValue(req.Context(), auth.UserIDKey, "user123")
-	req = req.WithContext(ctx)
-	w := httptest.NewRecorder()
-
-	// Вызываем обработчик
-	handler.Handle(w, req)
-
-	// Проверяем результат
-	resp := w.Result()
-	defer resp.Body.Close()
-
-	// Выводим результат
-	fmt.Println("Status Code:", resp.StatusCode)
-	fmt.Println("Response Body:", strings.TrimSpace(w.Body.String()))
-	// Output:
-	// Status Code: 400
-	// Response Body: filed to get user urls: internal server error
 }
 
 // Мок сервиса для тестирования

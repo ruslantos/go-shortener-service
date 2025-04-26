@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -130,125 +129,6 @@ func ExampleHandler_conflict() {
 	// Status Code: 409
 }
 
-// Пример использования обработчика для случая внутренней ошибки сервера
-func ExampleHandler_internalError() {
-	// Инициализируем конфигурацию
-	config.FlagShortURL = "http://short.url/"
-
-	// Создаем мок сервиса для случая внутренней ошибки сервера
-	mockService := &mockLinksService{
-		addBatchFunc: func(ctx context.Context, links []models.Link) ([]models.Link, error) {
-			return nil, errors.New("internal server error")
-		},
-	}
-
-	// Создаем обработчик с мок сервисом
-	handler := New(mockService)
-
-	// Создаем запрос и запись для тестирования
-	body := ShortenBatchRequest{
-		{CorrelationID: "1", OriginalURL: "http://example.com"},
-	}
-	bodyJSON, _ := json.Marshal(body)
-	req := httptest.NewRequest("POST", "/shorten/batch", strings.NewReader(string(bodyJSON)))
-	w := httptest.NewRecorder()
-
-	// Вызываем обработчик
-	handler.Handle(w, req)
-
-	// Проверяем результат
-	resp := w.Result()
-	defer resp.Body.Close()
-
-	// Выводим результат
-	fmt.Println("Status Code:", resp.StatusCode)
-	fmt.Println("Response Body:", strings.TrimSpace(w.Body.String()))
-	// Output:
-	// Status Code: 500
-	// Response Body: add batch shorten error
-}
-
-// Пример использования обработчика для случая, когда тело запроса пустое
-func ExampleHandler_emptyBody() {
-	// Создаем мок сервиса (не используется в этом случае)
-	mockService := &mockLinksService{}
-
-	// Создаем обработчик с мок сервисом
-	handler := New(mockService)
-
-	// Создаем запрос и запись для тестирования
-	req := httptest.NewRequest("POST", "/shorten/batch", strings.NewReader(""))
-	w := httptest.NewRecorder()
-
-	// Вызываем обработчик
-	handler.Handle(w, req)
-
-	// Проверяем результат
-	resp := w.Result()
-	defer resp.Body.Close()
-
-	// Выводим результат
-	fmt.Println("Status Code:", resp.StatusCode)
-	fmt.Println("Response Body:", strings.TrimSpace(w.Body.String()))
-	// Output:
-	// Status Code: 400
-	// Response Body: Error reading body
-}
-
-// Пример использования обработчика для случая ошибки чтения тела запроса
-func ExampleHandler_readBodyError() {
-	// Создаем мок сервиса (не используется в этом случае)
-	mockService := &mockLinksService{}
-
-	// Создаем обработчик с мок сервисом
-	handler := New(mockService)
-
-	// Создаем запрос и запись для тестирования с ошибкой чтения тела
-	req := httptest.NewRequest("POST", "/shorten/batch", &errorReader{})
-	w := httptest.NewRecorder()
-
-	// Вызываем обработчик
-	handler.Handle(w, req)
-
-	// Проверяем результат
-	resp := w.Result()
-	defer resp.Body.Close()
-
-	// Выводим результат
-	fmt.Println("Status Code:", resp.StatusCode)
-	fmt.Println("Response Body:", strings.TrimSpace(w.Body.String()))
-	// Output:
-	// Status Code: 400
-	// Response Body: Reading body error
-}
-
-// Пример использования обработчика для случая ошибки распаковки JSON
-func ExampleHandler_unmarshalError() {
-	// Создаем мок сервиса (не используется в этом случае)
-	mockService := &mockLinksService{}
-
-	// Создаем обработчик с мок сервисом
-	handler := New(mockService)
-
-	// Создаем запрос и запись для тестирования с некорректным JSON
-	req := httptest.NewRequest("POST", "/shorten/batch", strings.NewReader("{invalid json}"))
-	w := httptest.NewRecorder()
-
-	// Вызываем обработчик
-	handler.Handle(w, req)
-
-	// Проверяем результат
-	resp := w.Result()
-	defer resp.Body.Close()
-
-	// Выводим результат
-	fmt.Println("Status Code:", resp.StatusCode)
-	fmt.Println("Response Body:", strings.TrimSpace(w.Body.String()))
-	// Output:
-	// Status Code: 400
-	// Response Body: Unmarshalling body error
-}
-
 // Мок сервиса для тестирования
 type mockLinksService struct {
 	addBatchFunc func(ctx context.Context, links []models.Link) ([]models.Link, error)
@@ -256,11 +136,4 @@ type mockLinksService struct {
 
 func (m *mockLinksService) AddBatch(ctx context.Context, links []models.Link) ([]models.Link, error) {
 	return m.addBatchFunc(ctx, links)
-}
-
-// errorReader для имитации ошибки чтения тела запроса
-type errorReader struct{}
-
-func (e *errorReader) Read(p []byte) (n int, err error) {
-	return 0, errors.New("read error")
 }

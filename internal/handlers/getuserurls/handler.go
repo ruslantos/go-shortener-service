@@ -48,8 +48,8 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 
 	urls, err := h.linksService.GetUserUrls(r.Context())
 	if err != nil {
-		logger.GetLogger().Error("filed to get user urls", zap.Error(err))
-		http.Error(w, fmt.Sprintf("filed to get user urls: %s", err.Error()), http.StatusBadRequest)
+		logger.GetLogger().Error("failed to get user urls", zap.Error(err))
+		http.Error(w, fmt.Sprintf("failed to get user urls: %s", err.Error()), http.StatusBadRequest)
 		return
 	}
 	resp := prepareResponse(urls)

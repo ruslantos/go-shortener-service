@@ -39,7 +39,7 @@ type NetAddress struct {
 	Port int
 }
 
-// / ParseFlags парсит командные строки и переменные окружения для настройки приложения.
+// ParseFlags парсит командные строки и переменные окружения для настройки приложения.
 func ParseFlags() {
 	flag.StringVar(&FlagServerPort, "a", ":8080", "address and port to run server")
 	flag.StringVar(&FlagLogLevel, "l", "debug", "log level")
