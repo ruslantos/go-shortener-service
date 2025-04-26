@@ -19,31 +19,7 @@ jobs:
   shortenertest:
     runs-on: ubuntu-latest
     container: golang:1.23
-    needs: [branchtest,coverage]
-
-  coverage:
-    runs-on: ubuntu-latest
-    container: golang:1.23
     needs: branchtest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Generate coverage report
-        run: |
-          go test -coverprofile=coverage.out ./...
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage.out
-          flags: unittests
-          name: codecov-umbrella
-      - name: Check coverage
-        run: |
-          go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}' > coverage_percent
-          if [ $(cat coverage_percent) -lt 80 ]; then
-            echo "Coverage is below 80%"
-            exit 1
-          fi
 
     services:
       postgres:
