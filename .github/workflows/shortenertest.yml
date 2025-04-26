@@ -58,8 +58,9 @@ jobs:
 
       - name: Build server binary
         run: |
-          cd cmd/shortener
           go test -coverprofile=coverage.out -covermode=atomic ./...
+          
+          cd cmd/shortener
           go build -buildvcs=false -cover -o shortener .
 #          go build -buildvcs=false -o shortener
 
@@ -481,6 +482,7 @@ jobs:
           shortenertestbeta -test.v -test.run=^TestIteration18$ \
               -source-path=. \
 
+
       - name: Generate coverage report
         run: |
           cd cmd/shortener
@@ -501,6 +503,9 @@ jobs:
 
           # Generate HTML report
           go tool cover -html=coverage.out -o coverage.html
+
+      - name: Install bc
+        run: apt-get update && apt-get install -y bc
 
       - name: Check coverage threshold
         run: |
