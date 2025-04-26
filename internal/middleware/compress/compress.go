@@ -95,7 +95,7 @@ func GzipMiddlewareWriter(h http.Handler) http.Handler {
 		// Добавляем проверку размера контента
 		contentLength := r.Header.Get("Content-Length")
 		if contentLength != "" {
-			if size, err := strconv.Atoi(contentLength); err == nil && size > 10*1024*1024 { // Сжимаем только от 10MB
+			if size, err := strconv.Atoi(contentLength); err == nil && size > 10*1024*1024 { // Сжимаем только файлы от 10MB
 				if supportsGzip && isContentTypeHeadersExists {
 					cw := newCompressWriter(w)
 					ow = cw
