@@ -497,6 +497,12 @@ jobs:
             exit 1
           fi
 
+      - name: Cache artifact action
+        uses: actions/cache@v3
+        with:
+            path: ~/.actions-cache
+            key: ${{ runner.os }}-actions-v2
+
       - name: Upload coverage report
         uses: actions/upload-artifact@v2
         with:
