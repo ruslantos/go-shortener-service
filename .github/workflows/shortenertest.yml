@@ -515,8 +515,10 @@ jobs:
           TOTAL_COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
           echo "Total Coverage: $TOTAL_COVERAGE%"
           if (( $(echo "$TOTAL_COVERAGE < 40" | bc -l) )); then
-            echo "Coverage is below 40%"
+            echo "Coverage is below 40% - failing build"
             exit 1
+          else
+            echo "Coverage meets requirement"
           fi
 
       - name: Cache artifact action
