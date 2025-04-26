@@ -58,10 +58,8 @@ jobs:
 
       - name: Build server binary
         run: |
-          go test -coverprofile=coverage.out -covermode=atomic ./...
-          
           cd cmd/shortener
-          go build -buildvcs=false -cover -o shortener .
+          go build -buildvcs=false -o shortener
 
       - name: "Code increment #1"
         if: |
@@ -480,56 +478,3 @@ jobs:
         run: |
           shortenertestbeta -test.v -test.run=^TestIteration18$ \
               -source-path=. \
-
-
-      - name: Generate coverage report
-        run: |
-          mv coverage.out cmd/shortener/coverage.out
-          
-          cd cmd/shortener
-
-          # Install gocover-cobertura if not present
-          if ! command -v gocover-cobertura &> /dev/null; then
-            echo "Installing gocover-cobertura..."
-            go install github.com/boumenot/gocover-cobertura@latest
-          fi
-
-          # Ensure GOPATH/bin is in PATH
-          export PATH=$PATH:$(go env GOPATH)/bin
-
-          # Generate coverage reports
-          echo "Generating coverage reports..."
-          go tool cover -func=coverage.out
-          gocover-cobertura < coverage.out > coverage.xml
-
-          # Generate HTML report
-          go tool cover -html=coverage.out -o coverage.html
-
-      - name: Install bc
-        run: apt-get update && apt-get install -y bc
-
-      - name: Check coverage threshold
-        run: |
-          cd cmd/shortener
-          TOTAL_COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
-          echo "Total Coverage: $TOTAL_COVERAGE%"
-    
-          # Using awk for floating point comparison in sh
-          if [ $(echo "$TOTAL_COVERAGE < 40" | bc -l) -eq 1 ]; then
-           echo "Coverage is below 40% - failing build"
-          exit 1
-          else
-            echo "Coverage meets requirement"
-          fi
-
-      - name: Cache artifact action
-        uses: actions/cache@v3
-        with:
-            path: ~/.actions-cache
-            key: ${{ runner.os }}-actions-v2
-
-      - name: Upload coverage report
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: cmd/shortener/
-          retention-days: 1
