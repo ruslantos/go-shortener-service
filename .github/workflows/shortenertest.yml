@@ -510,10 +510,22 @@ jobs:
         run: apt-get update && apt-get install -y bc
 
       - name: Check coverage threshold
+#        run: |
+#          cd cmd/shortener
+#          TOTAL_COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
+#          echo "Total Coverage: $TOTAL_COVERAGE%"
+#          if (( $(echo "$TOTAL_COVERAGE < 40" | bc -l) )); then
+#            echo "Coverage is below 40% - failing build"
+#            exit 1
+#          else
+#            echo "Coverage meets requirement"
+#          fi
         run: |
           cd cmd/shortener
           TOTAL_COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
           echo "Total Coverage: $TOTAL_COVERAGE%"
+          
+          # Convert the comparison to use bash arithmetic
           if (( $(echo "$TOTAL_COVERAGE < 40" | bc -l) )); then
             echo "Coverage is below 40% - failing build"
             exit 1
