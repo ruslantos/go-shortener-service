@@ -484,23 +484,27 @@ jobs:
       - name: Generate coverage report
         run: |
           cd cmd/shortener
-          
-          # Install gocover-cobertura if not present
-          if ! command -v gocover-cobertura &> /dev/null; then
-            echo "Installing gocover-cobertura..."
-            go install github.com/boumenot/gocover-cobertura@latest
-          fi
-          
-          # Ensure GOPATH/bin is in PATH
-          export PATH=$PATH:$(go env GOPATH)/bin
-          
           # Generate coverage reports
-          echo "Generating coverage reports..."
           go tool cover -func=coverage.out
           gocover-cobertura < coverage.out > coverage.xml
-          
-          # Generate HTML report
           go tool cover -html=coverage.out -o coverage.html
+#
+#          # Install gocover-cobertura if not present
+#          if ! command -v gocover-cobertura &> /dev/null; then
+#            echo "Installing gocover-cobertura..."
+#            go install github.com/boumenot/gocover-cobertura@latest
+#          fi
+#
+#          # Ensure GOPATH/bin is in PATH
+#          export PATH=$PATH:$(go env GOPATH)/bin
+#
+#          # Generate coverage reports
+#          echo "Generating coverage reports..."
+#          go tool cover -func=coverage.out
+#          gocover-cobertura < coverage.out > coverage.xml
+#
+#          # Generate HTML report
+#          go tool cover -html=coverage.out -o coverage.html
 
       - name: Check coverage threshold
         run: |
@@ -521,5 +525,5 @@ jobs:
       - name: Upload coverage report
         uses: actions/upload-pages-artifact@v3
         with:
-          name: coverage-report
-          path: cmd/shortener/coverage.xml
+          path: cmd/shortener/
+          retention-days: 1
