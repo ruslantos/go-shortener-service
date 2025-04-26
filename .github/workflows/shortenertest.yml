@@ -485,6 +485,8 @@ jobs:
 
       - name: Generate coverage report
         run: |
+          mv coverage.out cmd/shortener/coverage.out
+          
           cd cmd/shortener
 
           # Install gocover-cobertura if not present
