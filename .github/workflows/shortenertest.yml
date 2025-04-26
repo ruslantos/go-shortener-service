@@ -60,7 +60,7 @@ jobs:
         run: |
           cd cmd/shortener
           go test -coverprofile=coverage.out -covermode=atomic ./...
-          go build -cover -o shortener .
+          go build -buildvcs=false -cover -o shortener .
 #          go build -buildvcs=false -o shortener
 
       - name: "Code increment #1"
