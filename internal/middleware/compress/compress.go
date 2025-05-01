@@ -4,7 +4,6 @@ import (
 	"compress/gzip"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 )
 
@@ -92,17 +91,7 @@ func GzipMiddlewareWriter(h http.Handler) http.Handler {
 		supportsGzip := strings.Contains(acceptEncoding, "gzip")
 		isContentTypeHeadersExists := r.Header.Get("Content-Type") == "application/json" || r.Header.Get("Content-Type") == "text/html"
 
-		// Добавляем проверку размера контента
-		contentLength := r.Header.Get("Content-Length")
-		if contentLength != "" {
-			if size, err := strconv.Atoi(contentLength); err == nil && size > 10*1024*1024 { // Сжимаем только файлы от 10MB
-				if supportsGzip && isContentTypeHeadersExists {
-					cw := newCompressWriter(w)
-					ow = cw
-					defer cw.Close()
-				}
-			}
-		} else if supportsGzip && isContentTypeHeadersExists {
+		if supportsGzip && isContentTypeHeadersExists {
 			// Если Content-Length не указан, но клиент поддерживает gzip
 			cw := newCompressWriter(w)
 			ow = cw
