@@ -15,6 +15,7 @@ var (
 	once   sync.Once
 )
 
+// responseWriter обертывает http.ResponseWriter для записи и отслеживания размера и статуса ответа.
 type responseWriter struct {
 	http.ResponseWriter
 	body   *bytes.Buffer
@@ -22,10 +23,12 @@ type responseWriter struct {
 	status int
 }
 
+// Size возвращает размер ответа.
 func (rw *responseWriter) Size() int {
 	return rw.size
 }
 
+// Write записывает данные в ответ и отслеживает размер записанных данных.
 func (rw *responseWriter) Write(b []byte) (int, error) {
 	n, err := rw.ResponseWriter.Write(b)
 	rw.size += n
@@ -33,11 +36,13 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 	return n, err
 }
 
+// WriteHeader устанавливает статус ответа и вызывает оригинальный WriteHeader.
 func (rw *responseWriter) WriteHeader(code int) {
 	rw.status = code
 	rw.ResponseWriter.WriteHeader(code)
 }
 
+// Status возвращает статус ответа.
 func (rw *responseWriter) Status() int {
 	if rw.status == 0 {
 		return http.StatusOK
@@ -45,6 +50,7 @@ func (rw *responseWriter) Status() int {
 	return rw.status
 }
 
+// LoggerChi middleware для логирования HTTP-запросов и ответов.
 func LoggerChi(logger *zap.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -79,6 +85,7 @@ func LoggerChi(logger *zap.Logger) func(next http.Handler) http.Handler {
 	}
 }
 
+// GetLogger возвращает глобальный экземпляр zap.Logger.
 func GetLogger() *zap.Logger {
 	once.Do(func() {
 		// Configure the logger
@@ -94,6 +101,7 @@ func GetLogger() *zap.Logger {
 	return logger
 }
 
+// Sync синхронизирует записи логов и очищает буфер.
 func Sync() error {
 	return logger.Sync()
 }

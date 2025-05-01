@@ -12,21 +12,34 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 )
 
-var (
-	FlagServerPort  string
-	FlagShortURL    = "http://localhost:8080/"
-	FlagLogLevel    = ""
-	FileStoragePath = ""
-	DatabaseDsn     = "user=videos password=password dbname=shortenerdatabase sslmode=disable"
-	IsDatabaseExist = true
-	IsFileExist     = true
-)
+// FlagServerPort holds the address and port to run the server.
+var FlagServerPort string
 
+// FlagShortURL holds the base URL for shortening service.
+var FlagShortURL = "http://localhost:8080/"
+
+// FlagLogLevel holds the log level for the application.
+var FlagLogLevel = ""
+
+// FileStoragePath holds the path to the file storage.
+var FileStoragePath = ""
+
+// DatabaseDsn holds the database connection string.
+var DatabaseDsn = "user=videos password=password dbname=shortenerdatabase sslmode=disable"
+
+// IsDatabaseExist indicates whether the database configuration is provided.
+var IsDatabaseExist = true
+
+// IsFileExist indicates whether the file storage configuration is provided.
+var IsFileExist = true
+
+// NetAddress represents a network address with a host and port.
 type NetAddress struct {
 	Host string
 	Port int
 }
 
+// ParseFlags парсит командные строки и переменные окружения для настройки приложения.
 func ParseFlags() {
 	flag.StringVar(&FlagServerPort, "a", ":8080", "address and port to run server")
 	flag.StringVar(&FlagLogLevel, "l", "debug", "log level")
@@ -94,10 +107,12 @@ func ParseFlags() {
 	)
 }
 
+// String возвращает строковое представление сетевого адреса.
 func (a NetAddress) String() string {
 	return a.Host + ":" + strconv.Itoa(a.Port) + "/"
 }
 
+// Set устанавливает значение сетевого адреса из строки.
 func (a *NetAddress) Set(s string) error {
 	hp := strings.Split(s, ":")
 	if len(hp) != 3 {
@@ -112,6 +127,7 @@ func (a *NetAddress) Set(s string) error {
 	return nil
 }
 
+// getEnvAddresses возвращает адрес сервера и базовый URL из переменных окружения.
 func getEnvAddresses() (serverAddress string, baseURL string) {
 	return os.Getenv("SERVER_ADDRESS"), os.Getenv("BASE_URL")
 }

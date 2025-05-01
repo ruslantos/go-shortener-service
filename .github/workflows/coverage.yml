@@ -1,0 +1,80 @@
+name: code coverage
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    container: golang:1.23
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: praktikum
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Setup go deps
+        run: |
+          go install golang.org/x/tools/cmd/goimports@latest
+      - name: Build server binary
+        run: |
+          # Сначала тестируем весь проект
+          go test -coverprofile=coverage.out -covermode=atomic ./...
+
+          # Затем собираем бинарник
+          cd cmd/shortener
+          go build -buildvcs=false -cover -o shortener .
+      - name: Generate coverage report
+        run: |
+          mv coverage.out cmd/shortener/coverage.out
+          
+          cd cmd/shortener
+
+          # Install gocover-cobertura if not present
+          if ! command -v gocover-cobertura &> /dev/null; then
+            echo "Installing gocover-cobertura..."
+            go install github.com/boumenot/gocover-cobertura@latest
+          fi
+
+          # Ensure GOPATH/bin is in PATH
+          export PATH=$PATH:$(go env GOPATH)/bin
+
+          # Generate coverage reports
+          echo "Generating coverage reports..."
+          go tool cover -func=coverage.out
+          gocover-cobertura < coverage.out > coverage.xml
+
+          # Generate HTML report
+          go tool cover -html=coverage.out -o coverage.html
+
+      - name: Code coverage
+        run: |
+          cd cmd/shortener
+          TOTAL_COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
+          echo "Total test coverage: $TOTAL_COVERAGE%"
+
+      - name: Cache artifact action
+        uses: actions/cache@v3
+        with:
+          path: ~/.actions-cache
+          key: ${{ runner.os }}-actions-v2
+
+      - name: Upload coverage report
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: cmd/shortener/
+          retention-days: 1
+

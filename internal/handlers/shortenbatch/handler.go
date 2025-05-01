@@ -15,18 +15,22 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/models"
 )
 
+// linksService определяет интерфейс для работы с пакетами ссылок.
 type linksService interface {
 	AddBatch(ctx context.Context, links []models.Link) ([]models.Link, error)
 }
 
+// Handler представляет обработчик HTTP-запросов для создания нескольких коротких ссылок.
 type Handler struct {
 	linksService linksService
 }
 
+// New создает новый экземпляр Handler с заданным linksService.
 func New(linksService linksService) *Handler {
 	return &Handler{linksService: linksService}
 }
 
+// Handle обрабатывает HTTP-запрос для получения оригинальной ссылки по короткому идентификатору.
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	bodyRaw, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -70,6 +74,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
+// prepareRequest преобразует ShortenBatchRequest в []models.Link.
 func prepareRequest(body ShortenBatchRequest) []models.Link {
 	links := make([]models.Link, len(body))
 	for i, link := range body {
@@ -78,6 +83,7 @@ func prepareRequest(body ShortenBatchRequest) []models.Link {
 	return links
 }
 
+// prepareResponse преобразует []models.Link в ShortenBatchResponse.
 func prepareResponse(links []models.Link) ShortenBatchResponse {
 	resp := ShortenBatchResponse{}
 	for _, link := range links {

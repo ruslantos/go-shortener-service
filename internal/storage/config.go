@@ -4,10 +4,12 @@ import (
 	flags "github.com/ruslantos/go-shortener-service/internal/config"
 )
 
+// Config содержит конфигурационные параметры для хранилища.
 type Config struct {
 	StorageType string
 }
 
+// Load загружает конфигурацию хранилища на основе флагов.
 func Load() Config {
 	var config Config
 

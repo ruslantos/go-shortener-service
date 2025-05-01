@@ -17,16 +17,19 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/service"
 )
 
+// LinksStorage реализует хранилище ссылок с использованием базы данных.
 type LinksStorage struct {
 	db *sqlx.DB
 }
 
+// NewLinksStorage создает новый экземпляр LinksStorage.
 func NewLinksStorage(db *sqlx.DB) *LinksStorage {
 	return &LinksStorage{
 		db: db,
 	}
 }
 
+// AddLink добавляет новую ссылку в хранилище.
 func (l LinksStorage) AddLink(ctx context.Context, link models.Link, userID string) (models.Link, error) {
 	rows, err := l.db.QueryContext(ctx,
 		"INSERT INTO links  (short_url, original_url, user_id) VALUES ($1, $2, $3)", link.ShortURL, link.OriginalURL, userID)
@@ -52,6 +55,7 @@ func (l LinksStorage) AddLink(ctx context.Context, link models.Link, userID stri
 	return link, nil
 }
 
+// AddLinkBatch добавляет пакет ссылок в хранилище.
 func (l LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link, userID string) ([]models.Link, error) {
 	tx, err := l.db.Begin()
 	if err != nil {
@@ -103,6 +107,7 @@ func (l LinksStorage) AddLinkBatch(ctx context.Context, links []models.Link, use
 	return links, errorDB
 }
 
+// GetLink возвращает ссылку по её короткому идентификатору.
 func (l LinksStorage) GetLink(ctx context.Context, value string) (models.Link, error) {
 	row := l.db.QueryRowContext(ctx,
 		"SELECT original_url, is_deleted FROM links where short_url = $1 LIMIT 1", value)
@@ -124,6 +129,7 @@ func (l LinksStorage) GetLink(ctx context.Context, value string) (models.Link, e
 	return linkDB, nil
 }
 
+// Ping проверяет соединение с хранилищем.
 func (l LinksStorage) Ping(ctx context.Context) error {
 	if l.db == nil {
 		return fmt.Errorf("database connection is nil")
@@ -136,6 +142,7 @@ func (l LinksStorage) Ping(ctx context.Context) error {
 	return err
 }
 
+// InitStorage инициализирует хранилище, создавая необходимые таблицы и индексы.
 func (l LinksStorage) InitStorage() error {
 	_, err := l.db.ExecContext(context.Background(),
 		`CREATE TABLE IF NOT EXISTS links(short_url TEXT,original_url TEXT, correlation_id TEXT, user_id TEXT, is_deleted BOOLEAN);
@@ -148,6 +155,7 @@ func (l LinksStorage) InitStorage() error {
 	return nil
 }
 
+// GetUserLinks возвращает все ссылки для указанного пользователя.
 func (l LinksStorage) GetUserLinks(ctx context.Context, userID string) ([]models.Link, error) {
 	var links []models.Link
 	rows, err := l.db.QueryContext(ctx,
@@ -172,6 +180,7 @@ func (l LinksStorage) GetUserLinks(ctx context.Context, userID string) ([]models
 	return links, nil
 }
 
+// DeleteUserURLs удаляет указанные ссылки для пользователя.
 func (l LinksStorage) DeleteUserURLs(ctx context.Context, urls []service.DeletedURLs) error {
 	if len(urls) == 0 {
 		return nil
