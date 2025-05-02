@@ -3,10 +3,14 @@ package main
 import (
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
+	"golang.org/x/tools/go/analysis/passes/errorsas"
 	"golang.org/x/tools/go/analysis/passes/printf"
 	"golang.org/x/tools/go/analysis/passes/shadow"
 	"golang.org/x/tools/go/analysis/passes/structtag"
+	"golang.org/x/tools/go/analysis/passes/unmarshal"
 	"honnef.co/go/tools/staticcheck"
+
+	"github.com/ruslantos/go-shortener-service/cmd/staticlint/noosexitanalyzer"
 )
 
 func main() {
@@ -27,6 +31,9 @@ func main() {
 		printf.Analyzer,
 		shadow.Analyzer,
 		structtag.Analyzer,
+		errorsas.Analyzer,
+		unmarshal.Analyzer,
+		noosexitanalyzer.Analyzer,
 	}
 	allChecks = append(allChecks, mychecks...)
 
