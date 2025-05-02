@@ -23,9 +23,12 @@ func main() {
 		}
 	}
 
-	multichecker.Main(
+	allChecks := []*analysis.Analyzer{
 		printf.Analyzer,
 		shadow.Analyzer,
 		structtag.Analyzer,
-	)
+	}
+	allChecks = append(allChecks, mychecks...)
+
+	multichecker.Main(allChecks...)
 }
