@@ -29,8 +29,8 @@ import (
 )
 
 func main() {
-	log, err := zap.NewDevelopment()
-	if err != nil {
+	log, zapErr := zap.NewDevelopment()
+	if zapErr != nil {
 		panic("cannot initialize zap")
 	}
 	defer logger.Sync()
@@ -81,7 +81,7 @@ func main() {
 
 	go linkService.StartDeleteWorker(context.Background())
 
-	err = http.ListenAndServe(config.FlagServerPort, r)
+	err := http.ListenAndServe(config.FlagServerPort, r)
 	if err != nil {
 		logger.GetLogger().Fatal("cannot start server", zap.Error(err))
 	}
