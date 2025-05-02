@@ -13,6 +13,9 @@ import (
 	"github.com/ruslantos/go-shortener-service/cmd/staticlint/noosexitanalyzer"
 )
 
+// main запускает multichecker с выбранными анализаторами.
+// multichecker позволяет запускать несколько статических анализаторов кода одновременно.
+// В данном случае используются анализаторы из стандартной библиотеки Go и дополнительные из staticcheck.
 func main() {
 	checks := map[string]bool{
 		"SA5000":   true,
@@ -28,12 +31,12 @@ func main() {
 	}
 
 	allChecks := []*analysis.Analyzer{
-		printf.Analyzer,
-		shadow.Analyzer,
-		structtag.Analyzer,
-		errorsas.Analyzer,
-		unmarshal.Analyzer,
-		noosexitanalyzer.Analyzer,
+		printf.Analyzer,           // Проверяет форматные строки в вызовах Printf и подобных функций.
+		shadow.Analyzer,           // Проверяет наличие скрытия переменных.
+		structtag.Analyzer,        // Проверяет корректность тегов структур.
+		errorsas.Analyzer,         // Проверяет корректное использование функции errors.As.
+		unmarshal.Analyzer,        // Проверяет корректное использование функций Unmarshal.
+		noosexitanalyzer.Analyzer, // анализатор для проверки использования os.Exit
 	}
 	allChecks = append(allChecks, mychecks...)
 
