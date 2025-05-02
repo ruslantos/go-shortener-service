@@ -1,3 +1,22 @@
+// Package noosexitanalyzer
+// Вместо os.Exit рекомендуется:
+//   - Использовать return с кодом возврата
+//   - Применять log.Fatal для фатальных ошибок
+//   - Возвращать ошибки из вложенных функций
+//
+// Пример ошибочного кода:
+//
+//	func main() {
+//	    os.Exit(1) // вызовет ошибку анализатора
+//	}
+//
+// Пример корректного кода:
+//
+//	func main() {
+//	    if err := run(); err != nil {
+//	        log.Fatal(err)
+//	    }
+//	}
 package noosexitanalyzer
 
 import (
@@ -10,6 +29,12 @@ import (
 
 const doc = "noosexitanalyzer prohibits direct calls to os.Exit in main function of main package"
 
+// Analyzer настраивает и возвращает анализатор для проверки вызовов os.Exit.
+//
+// Анализатор проверяет только функции main в пакете main. При обнаружении
+// прямого вызова os.Exit в этих функциях выдает предупреждение.
+//
+// Требует наличия inspect.Analyzer в зависимостях.
 var Analyzer = &analysis.Analyzer{
 	Name:     "noosexit",
 	Doc:      doc,
@@ -17,6 +42,11 @@ var Analyzer = &analysis.Analyzer{
 	Run:      run,
 }
 
+// run реализует основную логику анализатора.
+//
+// Функция проверяет, что анализируемый пакет является main, затем находит
+// функцию main и проверяет её тело на наличие вызовов os.Exit.
+// При обнаружении таких вызовов генерирует диагностическое сообщение.
 func run(pass *analysis.Pass) (interface{}, error) {
 	if pass.Pkg.Name() != "main" {
 		return nil, nil
