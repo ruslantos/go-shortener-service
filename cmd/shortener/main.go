@@ -90,7 +90,15 @@ func main() {
 
 	go linkService.StartDeleteWorker(context.Background())
 
-	err := http.ListenAndServe(config.FlagServerPort, r)
+	crt, key := config.GetCerts()
+	fmt.Println(crt, key)
+
+	var err error
+	if config.EnableHttps {
+		err = http.ListenAndServeTLS(":443", crt, key, r)
+	} else {
+		err = http.ListenAndServe(config.FlagServerPort, r)
+	}
 	if err != nil {
 		logger.GetLogger().Fatal("cannot start server", zap.Error(err))
 	}
