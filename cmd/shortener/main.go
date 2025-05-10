@@ -94,7 +94,7 @@ func main() {
 	fmt.Println(crt, key)
 
 	var err error
-	if config.EnableHttps {
+	if config.EnableHTTPS {
 		err = http.ListenAndServeTLS(":443", crt, key, r)
 	} else {
 		err = http.ListenAndServe(config.FlagServerPort, r)
