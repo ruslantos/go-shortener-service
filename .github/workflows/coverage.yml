@@ -9,7 +9,7 @@ on:
 jobs:
   coverage:
     runs-on: ubuntu-latest
-    container: golang:1.23
+    container: golang:1.24
 
     services:
       postgres:

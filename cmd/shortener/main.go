@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/pprof"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
@@ -28,9 +30,17 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/storage/mapstorage"
 )
 
+var (
+	buildVersion string = "N/A"
+	buildDate    string = "N/A"
+	buildCommit  string = "N/A"
+)
+
 func main() {
-	log, err := zap.NewDevelopment()
-	if err != nil {
+	fmt.Printf("Build version: %s\nBuild date: %s\nBuild commit: %s\n", buildVersion, buildDate, buildCommit)
+
+	log, zapErr := zap.NewDevelopment()
+	if zapErr != nil {
 		panic("cannot initialize zap")
 	}
 	defer logger.Sync()
@@ -81,7 +91,16 @@ func main() {
 
 	go linkService.StartDeleteWorker(context.Background())
 
-	err = http.ListenAndServe(config.FlagServerPort, r)
+	if _, err := os.Stat(config.CrtFile); os.IsNotExist(err) {
+		config.GenerateCerts()
+	}
+
+	var err error
+	if config.EnableHTTPS {
+		err = http.ListenAndServeTLS(":443", config.CrtFile, config.KeyFile, r)
+	} else {
+		err = http.ListenAndServe(config.FlagServerPort, r)
+	}
 	if err != nil {
 		logger.GetLogger().Fatal("cannot start server", zap.Error(err))
 	}

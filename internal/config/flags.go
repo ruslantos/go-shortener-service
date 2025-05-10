@@ -33,6 +33,9 @@ var IsDatabaseExist = true
 // IsFileExist indicates whether the file storage configuration is provided.
 var IsFileExist = true
 
+// EnableHTTPS
+var EnableHTTPS = false
+
 // NetAddress represents a network address with a host and port.
 type NetAddress struct {
 	Host string
@@ -45,6 +48,7 @@ func ParseFlags() {
 	flag.StringVar(&FlagLogLevel, "l", "debug", "log level")
 	flag.StringVar(&FileStoragePath, "f", "", "files storage path")
 	flag.StringVar(&DatabaseDsn, "d", "", "database dsn")
+	flag.BoolVar(&EnableHTTPS, "s", false, "enable https")
 
 	addr := new(NetAddress)
 	_ = flag.Value(addr)
@@ -86,6 +90,7 @@ func ParseFlags() {
 	}
 
 	//os.Setenv("DATABASE_DSN", "user=videos password=password dbname=shortenerdatabase sslmode=disable")
+	//os.Setenv("ENABLE_HTTPS", "true")
 
 	// проверка конфигурации БД
 	switch {
@@ -96,6 +101,14 @@ func ParseFlags() {
 		IsDatabaseExist = false
 	}
 
+	// проверка конфигурации HTTPS
+	switch {
+	case os.Getenv("ENABLE_HTTPS") != "" || EnableHTTPS:
+		EnableHTTPS = true
+	default:
+		EnableHTTPS = false
+	}
+
 	logger.GetLogger().Info("Init service config",
 		zap.String("SERVER_PORT", FlagServerPort),
 		zap.String("SHORT_URL", FlagShortURL),
@@ -104,6 +117,7 @@ func ParseFlags() {
 		zap.String("DATABASE_DSN", DatabaseDsn),
 		zap.Boolp("IsDatabaseExist", &IsDatabaseExist),
 		zap.Boolp("IsFileExist", &IsFileExist),
+		zap.Boolp("EnableHTTPS", &EnableHTTPS),
 	)
 }
 
