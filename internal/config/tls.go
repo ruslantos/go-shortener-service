@@ -16,13 +16,14 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 )
 
+// CrtFile server.crt
+// KeyFile server.key
 var (
-	// CrtFile server.crt
 	CrtFile = "server.crt"
-	// KeyFile server.key
 	KeyFile = "server.key"
 )
 
+// GenerateCerts генерация сертов
 func GenerateCerts() {
 	// Создаём шаблон сертификата
 	cert := &x509.Certificate{
