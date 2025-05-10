@@ -33,6 +33,7 @@ var IsDatabaseExist = true
 // IsFileExist indicates whether the file storage configuration is provided.
 var IsFileExist = true
 
+// EnableHTTPS
 var EnableHTTPS = false
 
 // NetAddress represents a network address with a host and port.
