@@ -16,7 +16,14 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 )
 
-func GetCerts() (string, string) {
+var (
+	// CrtFile server.crt
+	CrtFile = "server.crt"
+	// KeyFile server.key
+	KeyFile = "server.key"
+)
+
+func GenerateCerts() {
 	// Создаём шаблон сертификата
 	cert := &x509.Certificate{
 		SerialNumber: big.NewInt(1658),
@@ -57,19 +64,15 @@ func GetCerts() (string, string) {
 		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
 	})
 
-	crtFile := "server.crt"
-	keyFile := "server.key"
-
-	err = os.WriteFile(crtFile, certPEM.Bytes(), 0644)
+	err = os.WriteFile(CrtFile, certPEM.Bytes(), 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = os.WriteFile(keyFile, privateKeyPEM.Bytes(), 0600)
+	err = os.WriteFile(KeyFile, privateKeyPEM.Bytes(), 0600)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	logger.GetLogger().Info("Cert generated")
-	return crtFile, keyFile
 }

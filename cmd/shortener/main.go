@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/pprof"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
@@ -90,12 +91,13 @@ func main() {
 
 	go linkService.StartDeleteWorker(context.Background())
 
-	crt, key := config.GetCerts()
-	fmt.Println(crt, key)
+	if _, err := os.Stat(config.CrtFile); os.IsNotExist(err) {
+		config.GenerateCerts()
+	}
 
 	var err error
 	if config.EnableHTTPS {
-		err = http.ListenAndServeTLS(":443", crt, key, r)
+		err = http.ListenAndServeTLS(":443", config.CrtFile, config.KeyFile, r)
 	} else {
 		err = http.ListenAndServe(config.FlagServerPort, r)
 	}
