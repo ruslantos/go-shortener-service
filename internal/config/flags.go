@@ -13,7 +13,7 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 )
 
-var FlagShortURL string
+var FlagShortURL = "http://localhost:8080/"
 
 // Config содержит все параметры конфигурации приложения
 type Config struct {
