@@ -10,7 +10,7 @@ type Config struct {
 }
 
 // Load загружает конфигурацию хранилища на основе флагов.
-func Load() Config {
+func Load(flags flags.Config) Config {
 	var config Config
 
 	if flags.IsDatabaseExist {
