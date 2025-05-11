@@ -13,6 +13,7 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 )
 
+// FlagShortURL holds the base URL for shortening service.
 var FlagShortURL = "http://localhost:8080/"
 
 // Config содержит все параметры конфигурации приложения
@@ -28,6 +29,7 @@ type Config struct {
 	ConfigFile      string
 }
 
+// ConfigFile represents the configuration file for the application.
 type ConfigFile struct {
 	ServerAddress   string `json:"server_address"`    // -a / SERVER_ADDRESS
 	BaseURL         string `json:"base_url"`          // -b / BASE_URL
