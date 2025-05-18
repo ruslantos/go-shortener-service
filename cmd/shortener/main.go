@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/pprof"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
@@ -44,21 +45,21 @@ func main() {
 	}
 	defer logger.Sync()
 
-	config.ParseFlags()
+	cfg := config.ParseFlags()
 
 	var linkService service.LinkService
 	var linkStorage service.LinksStorage
 
-	cfg := storage.Load()
-	switch cfg.StorageType {
+	storageCfg := storage.Load(cfg)
+	switch storageCfg.StorageType {
 	case "map":
 		linkStorage = mapstorage.NewMapStorage()
 	case "file":
-		fileProducer, err := fileClient.NewProducer(config.FileStoragePath)
+		fileProducer, err := fileClient.NewProducer(cfg.FileStoragePath)
 		if err != nil {
 			logger.GetLogger().Fatal("cannot create file producer", zap.Error(err))
 		}
-		fileConsumer, err := fileClient.NewConsumer(config.FileStoragePath)
+		fileConsumer, err := fileClient.NewConsumer(cfg.FileStoragePath)
 		if err != nil {
 			logger.GetLogger().Fatal("cannot create file consumer", zap.Error(err))
 		}
@@ -69,7 +70,7 @@ func main() {
 			logger.GetLogger().Fatal("cannot initialize file storage", zap.Error(err))
 		}
 	case "postgres":
-		db, err := sqlx.Open("pgx", config.DatabaseDsn)
+		db, err := sqlx.Open("pgx", cfg.DatabaseDsn)
 		if err != nil {
 			logger.GetLogger().Fatal("cannot connect to database", zap.Error(err))
 		}
@@ -81,7 +82,7 @@ func main() {
 			logger.GetLogger().Fatal("cannot initialize database", zap.Error(err))
 		}
 	default:
-		logger.GetLogger().Fatal("unknown storage type", zap.String("storageType", cfg.StorageType))
+		logger.GetLogger().Fatal("unknown storage type", zap.String("storageType", storageCfg.StorageType))
 	}
 
 	linkService = *service.NewLinkService(linkStorage)
@@ -90,7 +91,16 @@ func main() {
 
 	go linkService.StartDeleteWorker(context.Background())
 
-	err := http.ListenAndServe(config.FlagServerPort, r)
+	if _, err := os.Stat(config.CrtFile); os.IsNotExist(err) {
+		config.GenerateCerts()
+	}
+
+	var err error
+	if cfg.EnableHTTPS {
+		err = http.ListenAndServeTLS(":443", config.CrtFile, config.KeyFile, r)
+	} else {
+		err = http.ListenAndServe(cfg.ServerPort, r)
+	}
 	if err != nil {
 		logger.GetLogger().Fatal("cannot start server", zap.Error(err))
 	}
