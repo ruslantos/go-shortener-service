@@ -6,6 +6,9 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
@@ -89,21 +92,50 @@ func main() {
 
 	r := setupRouter(linkService, log)
 
-	go linkService.StartDeleteWorker(context.Background())
+	ctx, stop := signal.NotifyContext(context.Background(),
+		syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	defer stop()
 
-	if _, err := os.Stat(config.CrtFile); os.IsNotExist(err) {
-		config.GenerateCerts()
+	deleteCtx, cancelDeleteWorker := context.WithCancel(context.Background())
+	defer cancelDeleteWorker()
+
+	go linkService.StartDeleteWorker(deleteCtx)
+
+	srv := &http.Server{
+		Addr:    cfg.ServerPort,
+		Handler: r,
 	}
 
-	var err error
-	if cfg.EnableHTTPS {
-		err = http.ListenAndServeTLS(":443", config.CrtFile, config.KeyFile, r)
-	} else {
-		err = http.ListenAndServe(cfg.ServerPort, r)
+	go func() {
+		var err error
+		if cfg.EnableHTTPS {
+			if _, err := os.Stat(config.CrtFile); os.IsNotExist(err) {
+				config.GenerateCerts()
+			}
+			err = http.ListenAndServeTLS(":443", config.CrtFile, config.KeyFile, r)
+		} else {
+			err = http.ListenAndServe(cfg.ServerPort, r)
+		}
+		if err != nil && err != http.ErrServerClosed {
+			logger.GetLogger().Fatal("cannot start server", zap.Error(err))
+		}
+	}()
+
+	<-ctx.Done()
+
+	stop()
+	logger.GetLogger().Info("Shutting down server gracefully...")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		logger.GetLogger().Error("Server forced to shutdown", zap.Error(err))
 	}
-	if err != nil {
-		logger.GetLogger().Fatal("cannot start server", zap.Error(err))
-	}
+
+	cancelDeleteWorker()
+
+	logger.GetLogger().Info("Server exited properly")
 }
 
 func setupRouter(linkService service.LinkService, log *zap.Logger) *chi.Mux {
