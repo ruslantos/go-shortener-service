@@ -35,6 +35,7 @@ func Load(flags flags.Config) Config {
 	return config
 }
 
+// Get возвращает экземпляр хранилища на основе конфигурации.
 func Get(cfg flags.Config) service.LinksStorage {
 	storageCfg := Load(cfg)
 	var linkStorage service.LinksStorage
@@ -73,6 +74,7 @@ func Get(cfg flags.Config) service.LinksStorage {
 	return linkStorage
 }
 
+// getDB возвращает соединение с базой данных.
 func getDB(dsn string) *sqlx.DB {
 	db, err := sqlx.Open("pgx", dsn)
 	if err != nil {
