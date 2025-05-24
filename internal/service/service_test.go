@@ -20,6 +20,10 @@ type MockLinksStorage struct {
 	mock.Mock
 }
 
+func (m *MockLinksStorage) Close() error {
+	return nil
+}
+
 func (m *MockLinksStorage) AddLink(ctx context.Context, link models.Link, userID string) (models.Link, error) {
 	args := m.Called(ctx, link, userID)
 	return args.Get(0).(models.Link), args.Error(1)

@@ -93,7 +93,6 @@ func main() {
 
 	<-ctx.Done()
 
-	stop()
 	logger.GetLogger().Info("Shutting down server gracefully...")
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
