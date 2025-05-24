@@ -11,13 +11,11 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/jmoiron/sqlx"
 	"golang.org/x/crypto/acme/autocert"
 
 	"go.uber.org/zap"
 
 	"github.com/ruslantos/go-shortener-service/internal/config"
-	fileClient "github.com/ruslantos/go-shortener-service/internal/files"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/deleteuserurls"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/getlink"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/getuserurls"
@@ -30,8 +28,6 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/service"
 	"github.com/ruslantos/go-shortener-service/internal/storage"
-	"github.com/ruslantos/go-shortener-service/internal/storage/filestorage"
-	"github.com/ruslantos/go-shortener-service/internal/storage/mapstorage"
 )
 
 var (
@@ -51,45 +47,9 @@ func main() {
 
 	cfg := config.ParseFlags()
 
-	var linkService service.LinkService
-	var linkStorage service.LinksStorage
+	linkStorage := storage.Get(cfg)
 
-	storageCfg := storage.Load(cfg)
-	switch storageCfg.StorageType {
-	case "map":
-		linkStorage = mapstorage.NewMapStorage()
-	case "file":
-		fileProducer, err := fileClient.NewProducer(cfg.FileStoragePath)
-		if err != nil {
-			logger.GetLogger().Fatal("cannot create file producer", zap.Error(err))
-		}
-		fileConsumer, err := fileClient.NewConsumer(cfg.FileStoragePath)
-		if err != nil {
-			logger.GetLogger().Fatal("cannot create file consumer", zap.Error(err))
-		}
-
-		linkStorage = filestorage.NewFileStorage(fileConsumer, fileProducer)
-		err = linkStorage.InitStorage()
-		if err != nil {
-			logger.GetLogger().Fatal("cannot initialize file storage", zap.Error(err))
-		}
-	case "postgres":
-		db, err := sqlx.Open("pgx", cfg.DatabaseDsn)
-		if err != nil {
-			logger.GetLogger().Fatal("cannot connect to database", zap.Error(err))
-		}
-		defer db.Close()
-
-		linkStorage = storage.NewLinksStorage(db)
-		err = linkStorage.InitStorage()
-		if err != nil {
-			logger.GetLogger().Fatal("cannot initialize database", zap.Error(err))
-		}
-	default:
-		logger.GetLogger().Fatal("unknown storage type", zap.String("storageType", storageCfg.StorageType))
-	}
-
-	linkService = *service.NewLinkService(linkStorage)
+	linkService := *service.NewLinkService(linkStorage)
 
 	r := setupRouter(linkService, log)
 
