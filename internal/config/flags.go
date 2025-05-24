@@ -1,6 +1,7 @@
 package config
 
 import (
+	"cmp"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -18,7 +19,7 @@ var FlagShortURL = "http://localhost:8080/"
 
 // Config содержит все параметры конфигурации приложения
 type Config struct {
-	ServerPort      string
+	ServerAddress   string
 	BaseURL         string
 	LogLevel        string
 	FileStoragePath string
@@ -47,7 +48,7 @@ type NetAddress struct {
 // ParseFlags парсит командные строки и переменные окружения для настройки приложения.
 func ParseFlags() Config {
 	c := Config{
-		ServerPort:      ":8080",
+		ServerAddress:   ":8080",
 		BaseURL:         "",
 		LogLevel:        "",
 		DatabaseDsn:     "",
@@ -56,16 +57,13 @@ func ParseFlags() Config {
 		EnableHTTPS:     false,
 	}
 
-	flag.StringVar(&c.ServerPort, "a", ":8080", "address and port to run server")
+	flag.StringVar(&c.ServerAddress, "a", ":8080", "address and port to run server")
 	flag.StringVar(&c.LogLevel, "l", "debug", "log level")
 	flag.StringVar(&c.FileStoragePath, "f", "", "files storage path")
 	flag.StringVar(&c.DatabaseDsn, "d", "", "database dsn")
 	flag.BoolVar(&c.EnableHTTPS, "s", false, "enable https")
 	flag.StringVar(&c.ConfigFile, "c", "", "config file")
-
-	addr := new(NetAddress)
-	_ = flag.Value(addr)
-	flag.Var(addr, "b", "Net address host:port")
+	flag.StringVar(&c.BaseURL, "b", "", "base URL in format 'http://host:port'")
 
 	flag.Parse()
 
@@ -75,64 +73,49 @@ func ParseFlags() Config {
 	}
 
 	// server address
-	switch {
-	case c.ServerPort != "":
-	case os.Getenv("SERVER_ADDRESS") != "":
-		c.ServerPort = os.Getenv("SERVER_ADDRESS")
-	case configFile.ServerAddress != "":
-		c.ServerPort = configFile.ServerAddress
-	default:
-		c.ServerPort = ":8080"
-	}
+	c.ServerAddress = cmp.Or(
+		c.ServerAddress,
+		os.Getenv("SERVER_ADDRESS"),
+		configFile.ServerAddress,
+		":8080",
+	)
 
 	// base URL
-	switch {
-	case c.BaseURL != "":
-		c.BaseURL = c.BaseURL + "/"
-	case addr.Host != "" && addr.Port != 0:
-		c.BaseURL = addr.String()
-	//case addr.Port == 0:
-	case os.Getenv("BASE_URL") != "":
-		c.BaseURL = os.Getenv("BASE_URL")
-	case configFile.BaseURL != "":
-		c.BaseURL = configFile.BaseURL
-	default:
-		c.BaseURL = "http://localhost:8080/"
+	c.BaseURL = cmp.Or(
+		c.BaseURL,
+		os.Getenv("BASE_URL"),
+		configFile.BaseURL,
+		"http://localhost:8080/",
+	)
+	if !strings.HasSuffix(c.BaseURL, "/") {
+		c.BaseURL += "/"
 	}
 	FlagShortURL = c.BaseURL
 
 	// log level
-	switch {
-	case c.LogLevel != "":
-	case os.Getenv("LOG_LEVEL") != "":
-		c.LogLevel = os.Getenv("LOG_LEVEL")
-	default:
-		c.LogLevel = "debug"
-	}
+	c.LogLevel = cmp.Or(
+		c.LogLevel,
+		os.Getenv("LOG_LEVEL"),
+		"debug",
+	)
 
 	// file storage path
-	switch {
-	case c.FileStoragePath != "":
-	case os.Getenv("FILE_STORAGE_PATH") != "":
-		c.FileStoragePath = os.Getenv("FILE_STORAGE_PATH")
-	case configFile.FileStoragePath != "":
-		c.FileStoragePath = configFile.FileStoragePath
-	default:
-		c.IsFileExist = false
-	}
+	c.FileStoragePath = cmp.Or(
+		c.FileStoragePath,
+		os.Getenv("FILE_STORAGE_PATH"),
+		configFile.FileStoragePath,
+	)
+	c.IsFileExist = c.FileStoragePath != ""
 
 	//os.Setenv("DATABASE_DSN", "user=videos password=password dbname=shortenerdatabase sslmode=disable")
 
 	// database dsn
-	switch {
-	case c.DatabaseDsn != "":
-	case os.Getenv("DATABASE_DSN") != "":
-		c.DatabaseDsn = os.Getenv("DATABASE_DSN")
-	case configFile.DatabaseDSN != "":
-		c.DatabaseDsn = configFile.DatabaseDSN
-	default:
-		c.IsDatabaseExist = false
-	}
+	c.DatabaseDsn = cmp.Or(
+		c.DatabaseDsn,
+		os.Getenv("DATABASE_DSN"),
+		configFile.DatabaseDSN,
+	)
+	c.IsDatabaseExist = c.DatabaseDsn != ""
 
 	// enable HTTPS
 	switch {
@@ -146,7 +129,7 @@ func ParseFlags() Config {
 	}
 
 	logger.GetLogger().Info("Init service config",
-		zap.String("SERVER_PORT", c.ServerPort),
+		zap.String("SERVER_PORT", c.ServerAddress),
 		zap.String("BASE_URL", c.BaseURL),
 		zap.String("LOG_LEVEL", c.LogLevel),
 		zap.String("STORAGE_PATH", c.FileStoragePath),

@@ -61,7 +61,7 @@ func main() {
 	go linkService.StartDeleteWorker(ctx)
 
 	srv := &http.Server{
-		Addr:    cfg.ServerPort,
+		Addr:    cfg.ServerAddress,
 		Handler: r,
 	}
 
@@ -84,7 +84,7 @@ func main() {
 			err = srv.ListenAndServeTLS("", "")
 		} else {
 			logger.GetLogger().Info("Starting HTTP server on :80")
-			err = http.ListenAndServe(cfg.ServerPort, r)
+			err = http.ListenAndServe(cfg.ServerAddress, r)
 		}
 		if err != nil && err != http.ErrServerClosed {
 			logger.GetLogger().Fatal("cannot start server", zap.Error(err))

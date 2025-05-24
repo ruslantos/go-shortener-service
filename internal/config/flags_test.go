@@ -59,7 +59,7 @@ func TestParseFlags(t *testing.T) {
 			cfg := ParseFlags()
 
 			// Проверяем результаты
-			assert.Equal(t, tt.expectedConfig["FlagServerPort"], cfg.ServerPort)
+			assert.Equal(t, tt.expectedConfig["FlagServerPort"], cfg.ServerAddress)
 			assert.Equal(t, tt.expectedConfig["FlagShortURL"], cfg.BaseURL)
 			assert.Equal(t, tt.expectedConfig["FlagLogLevel"], cfg.LogLevel)
 			assert.Equal(t, tt.expectedConfig["FileStoragePath"], cfg.FileStoragePath)
