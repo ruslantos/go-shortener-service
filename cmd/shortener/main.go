@@ -2,16 +2,17 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"net/http/pprof"
-	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
+	"golang.org/x/crypto/acme/autocert"
 
 	"go.uber.org/zap"
 
@@ -109,11 +110,22 @@ func main() {
 	go func() {
 		var err error
 		if cfg.EnableHTTPS {
-			if _, err := os.Stat(config.CrtFile); os.IsNotExist(err) {
-				config.GenerateCerts()
+			certManager := &autocert.Manager{
+				Prompt:     autocert.AcceptTOS,
+				HostPolicy: autocert.HostWhitelist("shortener.com"),
+				Cache:      autocert.DirCache("certs"),
 			}
-			err = http.ListenAndServeTLS(":443", config.CrtFile, config.KeyFile, r)
+			tlsConfig := &tls.Config{
+				GetCertificate: certManager.GetCertificate,
+				MinVersion:     tls.VersionTLS12,
+			}
+			srv.Addr = ":443"
+			srv.TLSConfig = tlsConfig
+
+			logger.GetLogger().Info("Starting HTTPS server on :443")
+			err = srv.ListenAndServeTLS("", "")
 		} else {
+			logger.GetLogger().Info("Starting HTTP server on :80")
 			err = http.ListenAndServe(cfg.ServerPort, r)
 		}
 		if err != nil && err != http.ErrServerClosed {
