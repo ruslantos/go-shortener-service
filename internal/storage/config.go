@@ -63,6 +63,7 @@ func Get(cfg flags.Config) service.LinksStorage {
 		linkStorage = NewLinksStorage(db)
 		err := linkStorage.InitStorage()
 		if err != nil {
+			db.Close()
 			logger.GetLogger().Fatal("cannot initialize database", zap.Error(err))
 		}
 	default:
@@ -77,7 +78,6 @@ func getDB(dsn string) *sqlx.DB {
 	if err != nil {
 		logger.GetLogger().Fatal("cannot connect to database", zap.Error(err))
 	}
-	defer db.Close()
 
 	return db
 }

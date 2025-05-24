@@ -207,3 +207,7 @@ func (l LinksStorage) DeleteUserURLs(ctx context.Context, urls []service.Deleted
 
 	return tx.Commit()
 }
+
+func (s *LinksStorage) Close() error {
+	return s.db.Close()
+}

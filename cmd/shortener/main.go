@@ -48,6 +48,7 @@ func main() {
 	cfg := config.ParseFlags()
 
 	linkStorage := storage.Get(cfg)
+	defer linkStorage.Close()
 
 	linkService := *service.NewLinkService(linkStorage)
 
@@ -57,10 +58,7 @@ func main() {
 		syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 	defer stop()
 
-	deleteCtx, cancelDeleteWorker := context.WithCancel(context.Background())
-	defer cancelDeleteWorker()
-
-	go linkService.StartDeleteWorker(deleteCtx)
+	go linkService.StartDeleteWorker(ctx)
 
 	srv := &http.Server{
 		Addr:    cfg.ServerPort,
@@ -104,8 +102,6 @@ func main() {
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		logger.GetLogger().Error("Server forced to shutdown", zap.Error(err))
 	}
-
-	cancelDeleteWorker()
 
 	logger.GetLogger().Info("Server exited properly")
 }
