@@ -14,6 +14,7 @@ import (
 
 type contextKey string
 
+// TrustedSubnetKey ключ для хранения в контексте
 const TrustedSubnetKey contextKey = "trustedSubnet"
 
 // Middleware проверяет, что IP клиента находится в доверенной подсети
