@@ -57,8 +57,8 @@ func ParseFlags() Config {
 		EnableHTTPS:     false,
 	}
 
-	flag.StringVar(&c.ServerAddress, "a", ":8080", "address and port to run server")
-	flag.StringVar(&c.LogLevel, "l", "debug", "log level")
+	flag.StringVar(&c.ServerAddress, "a", "", "address and port to run server")
+	flag.StringVar(&c.LogLevel, "l", "", "log level")
 	flag.StringVar(&c.FileStoragePath, "f", "", "files storage path")
 	flag.StringVar(&c.DatabaseDsn, "d", "", "database dsn")
 	flag.BoolVar(&c.EnableHTTPS, "s", false, "enable https")

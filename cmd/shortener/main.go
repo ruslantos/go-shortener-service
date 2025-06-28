@@ -84,7 +84,7 @@ func main() {
 			err = srv.ListenAndServeTLS("", "")
 		} else {
 			logger.GetLogger().Info("Starting HTTP server on :80")
-			err = http.ListenAndServe(cfg.ServerAddress, r)
+			err = srv.ListenAndServe()
 		}
 		if err != nil && err != http.ErrServerClosed {
 			logger.GetLogger().Fatal("cannot start server", zap.Error(err))
