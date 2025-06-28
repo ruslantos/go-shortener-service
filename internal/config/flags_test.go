@@ -56,14 +56,14 @@ func TestParseFlags(t *testing.T) {
 			os.Args = append([]string{"cmd"}, tt.args...)
 
 			// Вызываем тестируемую функцию
-			ParseFlags()
+			cfg := ParseFlags()
 
 			// Проверяем результаты
-			assert.Equal(t, tt.expectedConfig["FlagServerPort"], FlagServerPort)
-			assert.Equal(t, tt.expectedConfig["FlagShortURL"], FlagShortURL)
-			assert.Equal(t, tt.expectedConfig["FlagLogLevel"], FlagLogLevel)
-			assert.Equal(t, tt.expectedConfig["FileStoragePath"], FileStoragePath)
-			assert.Equal(t, tt.expectedConfig["DatabaseDsn"], DatabaseDsn)
+			assert.Equal(t, tt.expectedConfig["FlagServerPort"], cfg.ServerAddress)
+			assert.Equal(t, tt.expectedConfig["FlagShortURL"], cfg.BaseURL)
+			assert.Equal(t, tt.expectedConfig["FlagLogLevel"], cfg.LogLevel)
+			assert.Equal(t, tt.expectedConfig["FileStoragePath"], cfg.FileStoragePath)
+			assert.Equal(t, tt.expectedConfig["DatabaseDsn"], cfg.DatabaseDsn)
 		})
 	}
 }
@@ -111,77 +111,4 @@ func TestNetAddressSet(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestGetEnvAddresses(t *testing.T) {
-	tests := []struct {
-		name         string
-		serverAddr   string
-		baseURL      string
-		expectedAddr string
-		expectedBase string
-	}{
-		{
-			name:         "both set",
-			serverAddr:   ":9090",
-			baseURL:      "http://test.com",
-			expectedAddr: ":9090",
-			expectedBase: "http://test.com",
-		},
-		{
-			name:         "only server address",
-			serverAddr:   ":9090",
-			baseURL:      "",
-			expectedAddr: ":9090",
-			expectedBase: "",
-		},
-		{
-			name:         "only base URL",
-			serverAddr:   "",
-			baseURL:      "http://test.com",
-			expectedAddr: "",
-			expectedBase: "http://test.com",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Сохраняем оригинальные env vars
-			oldServerAddr := os.Getenv("SERVER_ADDRESS")
-			oldBaseURL := os.Getenv("BASE_URL")
-
-			// Восстанавливаем после теста
-			defer func() {
-				os.Setenv("SERVER_ADDRESS", oldServerAddr)
-				os.Setenv("BASE_URL", oldBaseURL)
-			}()
-
-			// Устанавливаем env vars
-			os.Setenv("SERVER_ADDRESS", tt.serverAddr)
-			os.Setenv("BASE_URL", tt.baseURL)
-
-			// Вызываем тестируемую функцию
-			serverAddress, baseURL := getEnvAddresses()
-
-			// Проверяем результаты
-			assert.Equal(t, tt.expectedAddr, serverAddress)
-			assert.Equal(t, tt.expectedBase, baseURL)
-		})
-	}
-}
-
-func TestMain(m *testing.M) {
-	// Запускаем тесты
-	code := m.Run()
-
-	// Восстанавливаем оригинальные значения глобальных переменных
-	FlagServerPort = ":8080"
-	FlagShortURL = "http://localhost:8080/"
-	FlagLogLevel = "debug"
-	FileStoragePath = ""
-	DatabaseDsn = "user=videos password=password dbname=shortenerdatabase sslmode=disable"
-	IsDatabaseExist = true
-	IsFileExist = true
-
-	os.Exit(code)
 }

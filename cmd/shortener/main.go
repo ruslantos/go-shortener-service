@@ -2,17 +2,20 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"net/http/pprof"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/jmoiron/sqlx"
+	"golang.org/x/crypto/acme/autocert"
 
 	"go.uber.org/zap"
 
 	"github.com/ruslantos/go-shortener-service/internal/config"
-	fileClient "github.com/ruslantos/go-shortener-service/internal/files"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/deleteuserurls"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/getlink"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/getuserurls"
@@ -25,8 +28,6 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/service"
 	"github.com/ruslantos/go-shortener-service/internal/storage"
-	"github.com/ruslantos/go-shortener-service/internal/storage/filestorage"
-	"github.com/ruslantos/go-shortener-service/internal/storage/mapstorage"
 )
 
 var (
@@ -44,56 +45,64 @@ func main() {
 	}
 	defer logger.Sync()
 
-	config.ParseFlags()
+	cfg := config.ParseFlags()
 
-	var linkService service.LinkService
-	var linkStorage service.LinksStorage
+	linkStorage := storage.Get(cfg)
+	defer linkStorage.Close()
 
-	cfg := storage.Load()
-	switch cfg.StorageType {
-	case "map":
-		linkStorage = mapstorage.NewMapStorage()
-	case "file":
-		fileProducer, err := fileClient.NewProducer(config.FileStoragePath)
-		if err != nil {
-			logger.GetLogger().Fatal("cannot create file producer", zap.Error(err))
-		}
-		fileConsumer, err := fileClient.NewConsumer(config.FileStoragePath)
-		if err != nil {
-			logger.GetLogger().Fatal("cannot create file consumer", zap.Error(err))
-		}
-
-		linkStorage = filestorage.NewFileStorage(fileConsumer, fileProducer)
-		err = linkStorage.InitStorage()
-		if err != nil {
-			logger.GetLogger().Fatal("cannot initialize file storage", zap.Error(err))
-		}
-	case "postgres":
-		db, err := sqlx.Open("pgx", config.DatabaseDsn)
-		if err != nil {
-			logger.GetLogger().Fatal("cannot connect to database", zap.Error(err))
-		}
-		defer db.Close()
-
-		linkStorage = storage.NewLinksStorage(db)
-		err = linkStorage.InitStorage()
-		if err != nil {
-			logger.GetLogger().Fatal("cannot initialize database", zap.Error(err))
-		}
-	default:
-		logger.GetLogger().Fatal("unknown storage type", zap.String("storageType", cfg.StorageType))
-	}
-
-	linkService = *service.NewLinkService(linkStorage)
+	linkService := *service.NewLinkService(linkStorage)
 
 	r := setupRouter(linkService, log)
 
-	go linkService.StartDeleteWorker(context.Background())
+	ctx, stop := signal.NotifyContext(context.Background(),
+		syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	defer stop()
 
-	err := http.ListenAndServe(config.FlagServerPort, r)
-	if err != nil {
-		logger.GetLogger().Fatal("cannot start server", zap.Error(err))
+	go linkService.StartDeleteWorker(ctx)
+
+	srv := &http.Server{
+		Addr:    cfg.ServerAddress,
+		Handler: r,
 	}
+
+	go func() {
+		var err error
+		if cfg.EnableHTTPS {
+			certManager := &autocert.Manager{
+				Prompt:     autocert.AcceptTOS,
+				HostPolicy: autocert.HostWhitelist("shortener.com"),
+				Cache:      autocert.DirCache("certs"),
+			}
+			tlsConfig := &tls.Config{
+				GetCertificate: certManager.GetCertificate,
+				MinVersion:     tls.VersionTLS12,
+			}
+			srv.Addr = ":443"
+			srv.TLSConfig = tlsConfig
+
+			logger.GetLogger().Info("Starting HTTPS server on :443")
+			err = srv.ListenAndServeTLS("", "")
+		} else {
+			logger.GetLogger().Info("Starting HTTP server on :80")
+			err = srv.ListenAndServe()
+		}
+		if err != nil && err != http.ErrServerClosed {
+			logger.GetLogger().Fatal("cannot start server", zap.Error(err))
+		}
+	}()
+
+	<-ctx.Done()
+
+	logger.GetLogger().Info("Shutting down server gracefully...")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		logger.GetLogger().Error("Server forced to shutdown", zap.Error(err))
+	}
+
+	logger.GetLogger().Info("Server exited properly")
 }
 
 func setupRouter(linkService service.LinkService, log *zap.Logger) *chi.Mux {

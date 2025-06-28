@@ -207,3 +207,8 @@ func (l LinksStorage) DeleteUserURLs(ctx context.Context, urls []service.Deleted
 
 	return tx.Commit()
 }
+
+// Close закрывает соединение с базой данных.
+func (l *LinksStorage) Close() error {
+	return l.db.Close()
+}

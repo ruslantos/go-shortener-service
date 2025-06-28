@@ -29,6 +29,8 @@ type LinksStorage interface {
 	DeleteUserURLs(ctx context.Context, urls []DeletedURLs) error
 	// InitStorage инициализирует хранилище.
 	InitStorage() error
+	// Close закрывает хранилище.
+	Close() error
 }
 
 // LinkService предоставляет сервис для работы с ссылками.

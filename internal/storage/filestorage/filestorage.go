@@ -146,3 +146,8 @@ func (l *LinksStorage) DeleteUserURLs(ctx context.Context, urls []service.Delete
 
 	return nil
 }
+
+// Close закрывает соединение с хранилищем (в данном случае не выполняет никаких действий).
+func (l *LinksStorage) Close() error {
+	return nil
+}

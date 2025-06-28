@@ -1,6 +1,8 @@
 package config
 
 import (
+	"cmp"
+	"encoding/json"
 	"errors"
 	"flag"
 	"os"
@@ -12,26 +14,30 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 )
 
-// FlagServerPort holds the address and port to run the server.
-var FlagServerPort string
-
 // FlagShortURL holds the base URL for shortening service.
 var FlagShortURL = "http://localhost:8080/"
 
-// FlagLogLevel holds the log level for the application.
-var FlagLogLevel = ""
+// Config содержит все параметры конфигурации приложения
+type Config struct {
+	ServerAddress   string
+	BaseURL         string
+	LogLevel        string
+	FileStoragePath string
+	DatabaseDsn     string
+	IsDatabaseExist bool
+	IsFileExist     bool
+	EnableHTTPS     bool
+	ConfigFile      string
+}
 
-// FileStoragePath holds the path to the file storage.
-var FileStoragePath = ""
-
-// DatabaseDsn holds the database connection string.
-var DatabaseDsn = "user=videos password=password dbname=shortenerdatabase sslmode=disable"
-
-// IsDatabaseExist indicates whether the database configuration is provided.
-var IsDatabaseExist = true
-
-// IsFileExist indicates whether the file storage configuration is provided.
-var IsFileExist = true
+// ConfigFile represents the configuration file for the application.
+type ConfigFile struct {
+	ServerAddress   string `json:"server_address"`    // -a / SERVER_ADDRESS
+	BaseURL         string `json:"base_url"`          // -b / BASE_URL
+	FileStoragePath string `json:"file_storage_path"` // -f / FILE_STORAGE_PATH
+	DatabaseDSN     string `json:"database_dsn"`      // -d / DATABASE_DSN
+	EnableHTTPS     bool   `json:"enable_https"`      // -s / ENABLE_HTTPS
+}
 
 // NetAddress represents a network address with a host and port.
 type NetAddress struct {
@@ -40,71 +46,100 @@ type NetAddress struct {
 }
 
 // ParseFlags парсит командные строки и переменные окружения для настройки приложения.
-func ParseFlags() {
-	flag.StringVar(&FlagServerPort, "a", ":8080", "address and port to run server")
-	flag.StringVar(&FlagLogLevel, "l", "debug", "log level")
-	flag.StringVar(&FileStoragePath, "f", "", "files storage path")
-	flag.StringVar(&DatabaseDsn, "d", "", "database dsn")
+func ParseFlags() Config {
+	c := Config{
+		ServerAddress:   ":8080",
+		BaseURL:         "",
+		LogLevel:        "",
+		DatabaseDsn:     "",
+		IsDatabaseExist: true,
+		IsFileExist:     true,
+		EnableHTTPS:     false,
+	}
 
-	addr := new(NetAddress)
-	_ = flag.Value(addr)
-	flag.Var(addr, "b", "Net address host:port")
+	flag.StringVar(&c.ServerAddress, "a", "", "address and port to run server")
+	flag.StringVar(&c.LogLevel, "l", "", "log level")
+	flag.StringVar(&c.FileStoragePath, "f", "", "files storage path")
+	flag.StringVar(&c.DatabaseDsn, "d", "", "database dsn")
+	flag.BoolVar(&c.EnableHTTPS, "s", false, "enable https")
+	flag.StringVar(&c.ConfigFile, "c", "", "config file")
+	flag.StringVar(&c.BaseURL, "b", "", "base URL in format 'http://host:port'")
 
 	flag.Parse()
 
-	envServerAddress, envBaseURL := getEnvAddresses()
-
-	if envServerAddress != "" {
-		FlagServerPort = envServerAddress
+	configFile, err := c.loadConfigFromFile()
+	if err != nil {
+		logger.GetLogger().Error("Failed to load config from file", zap.Error(err))
 	}
 
-	switch {
-	case envBaseURL != "":
-		FlagShortURL = envBaseURL + "/"
-	case addr.Host != "" && addr.Port != 0:
-		FlagShortURL = addr.String()
-	default:
-		FlagShortURL = "http://localhost:8080/"
-	}
+	// server address
+	c.ServerAddress = cmp.Or(
+		c.ServerAddress,
+		os.Getenv("SERVER_ADDRESS"),
+		configFile.ServerAddress,
+		":8080",
+	)
 
-	if envLogLevel := os.Getenv("LOG_LEVEL"); envLogLevel != "" {
-		FlagLogLevel = envLogLevel
+	// base URL
+	c.BaseURL = cmp.Or(
+		c.BaseURL,
+		os.Getenv("BASE_URL"),
+		configFile.BaseURL,
+		"http://localhost:8080/",
+	)
+	if !strings.HasSuffix(c.BaseURL, "/") {
+		c.BaseURL += "/"
 	}
+	FlagShortURL = c.BaseURL
 
-	if fileStoragePath := os.Getenv("FILE_STORAGE_PATH"); fileStoragePath != "" {
-		FileStoragePath = fileStoragePath
-	}
+	// log level
+	c.LogLevel = cmp.Or(
+		c.LogLevel,
+		os.Getenv("LOG_LEVEL"),
+		"debug",
+	)
 
-	//FileStoragePath = "./tmp/links"
-	// проверка конфигурации файла
-	switch {
-	case FileStoragePath != "":
-	case os.Getenv("FILE_STORAGE_PATH") != "":
-		FileStoragePath = os.Getenv("FILE_STORAGE_PATH")
-	default:
-		IsFileExist = false
-	}
+	// file storage path
+	c.FileStoragePath = cmp.Or(
+		c.FileStoragePath,
+		os.Getenv("FILE_STORAGE_PATH"),
+		configFile.FileStoragePath,
+	)
+	c.IsFileExist = c.FileStoragePath != ""
 
 	//os.Setenv("DATABASE_DSN", "user=videos password=password dbname=shortenerdatabase sslmode=disable")
 
-	// проверка конфигурации БД
+	// database dsn
+	c.DatabaseDsn = cmp.Or(
+		c.DatabaseDsn,
+		os.Getenv("DATABASE_DSN"),
+		configFile.DatabaseDSN,
+	)
+	c.IsDatabaseExist = c.DatabaseDsn != ""
+
+	// enable HTTPS
 	switch {
-	case DatabaseDsn != "":
-	case os.Getenv("DATABASE_DSN") != "":
-		DatabaseDsn = os.Getenv("DATABASE_DSN")
+	case c.EnableHTTPS:
+	case os.Getenv("ENABLE_HTTPS") != "":
+		c.EnableHTTPS = getBoolEnv("ENABLE_HTTPS", false)
+	case configFile.EnableHTTPS:
+		c.EnableHTTPS = configFile.EnableHTTPS
 	default:
-		IsDatabaseExist = false
+		c.EnableHTTPS = false
 	}
 
 	logger.GetLogger().Info("Init service config",
-		zap.String("SERVER_PORT", FlagServerPort),
-		zap.String("SHORT_URL", FlagShortURL),
-		zap.String("LOG_LEVEL", FlagLogLevel),
-		zap.String("STORAGE_PATH", FileStoragePath),
-		zap.String("DATABASE_DSN", DatabaseDsn),
-		zap.Boolp("IsDatabaseExist", &IsDatabaseExist),
-		zap.Boolp("IsFileExist", &IsFileExist),
+		zap.String("SERVER_PORT", c.ServerAddress),
+		zap.String("BASE_URL", c.BaseURL),
+		zap.String("LOG_LEVEL", c.LogLevel),
+		zap.String("STORAGE_PATH", c.FileStoragePath),
+		zap.String("DATABASE_DSN", c.DatabaseDsn),
+		zap.Boolp("IsDatabaseExist", &c.IsDatabaseExist),
+		zap.Boolp("IsFileExist", &c.IsFileExist),
+		zap.Boolp("EnableHTTPS", &c.EnableHTTPS),
 	)
+
+	return c
 }
 
 // String возвращает строковое представление сетевого адреса.
@@ -127,7 +162,40 @@ func (a *NetAddress) Set(s string) error {
 	return nil
 }
 
-// getEnvAddresses возвращает адрес сервера и базовый URL из переменных окружения.
-func getEnvAddresses() (serverAddress string, baseURL string) {
-	return os.Getenv("SERVER_ADDRESS"), os.Getenv("BASE_URL")
+func (c *Config) loadConfigFromFile() (ConfigFile, error) {
+	var config ConfigFile
+	filePath := c.getConfigFilePath()
+	if filePath == "" {
+		return config, nil
+	}
+
+	file, err := os.ReadFile(filePath)
+	if err != nil {
+		return config, err
+	}
+
+	if err := json.Unmarshal(file, &config); err != nil {
+		return config, err
+	}
+
+	return config, nil
+}
+
+func (c *Config) getConfigFilePath() string {
+	switch {
+	case c.ConfigFile != "":
+		return c.ConfigFile
+	case os.Getenv("CONFIG") != "":
+		return os.Getenv("CONFIG")
+	default:
+		return ""
+	}
+}
+
+func getBoolEnv(key string, defaultVal bool) bool {
+	val := os.Getenv(key)
+	if val == "" {
+		return defaultVal
+	}
+	return strings.ToLower(val) == "true" || val == "1"
 }
