@@ -19,7 +19,7 @@ import (
 )
 
 func TestHandler_Handle_Success(t *testing.T) {
-	service := &MocklinksService{}
+	service := &mocklinksService{}
 	linksIn := []models.Link{
 		{CorrelationID: "123", OriginalURL: "http://ivghfkudbptp.biz/qqlcxvlwy1o/pbmze/ad4hdsyf"},
 		{CorrelationID: "456", OriginalURL: "http://ivghfkudbptp.biz/qqlcxvlwy1o/pbmze/ad4hdsyf2"},
