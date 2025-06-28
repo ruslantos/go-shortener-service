@@ -27,6 +27,7 @@ import (
 	authMiddlware "github.com/ruslantos/go-shortener-service/internal/middleware/auth"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/compress"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
+	"github.com/ruslantos/go-shortener-service/internal/middleware/trustedsubnet"
 	"github.com/ruslantos/go-shortener-service/internal/service"
 	"github.com/ruslantos/go-shortener-service/internal/storage"
 )
@@ -53,7 +54,7 @@ func main() {
 
 	linkService := *service.NewLinkService(linkStorage)
 
-	r := setupRouter(linkService, log)
+	r := setupRouter(linkService, log, cfg)
 
 	ctx, stop := signal.NotifyContext(context.Background(),
 		syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
@@ -106,7 +107,7 @@ func main() {
 	logger.GetLogger().Info("Server exited properly")
 }
 
-func setupRouter(linkService service.LinkService, log *zap.Logger) *chi.Mux {
+func setupRouter(linkService service.LinkService, log *zap.Logger, cfg config.Config) *chi.Mux {
 	postLinkHandler := postlink.New(&linkService)
 	getLinkHandler := getlink.New(&linkService)
 	shortenHandler := shorten.New(&linkService)
@@ -121,7 +122,9 @@ func setupRouter(linkService service.LinkService, log *zap.Logger) *chi.Mux {
 	r.Use(compress.GzipMiddlewareWriter,
 		compress.GzipMiddlewareReader,
 		logger.LoggerChi(log),
-		authMiddlware.CookieMiddleware)
+		authMiddlware.CookieMiddleware,
+		trustedsubnet.Middleware(cfg),
+	)
 
 	r.Post("/", postLinkHandler.Handle)
 	r.Get("/{link}", getLinkHandler.Handle)
