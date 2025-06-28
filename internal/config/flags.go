@@ -28,6 +28,7 @@ type Config struct {
 	IsFileExist     bool
 	EnableHTTPS     bool
 	ConfigFile      string
+	TrustedSubnet   string
 }
 
 // ConfigFile represents the configuration file for the application.
@@ -37,6 +38,7 @@ type ConfigFile struct {
 	FileStoragePath string `json:"file_storage_path"` // -f / FILE_STORAGE_PATH
 	DatabaseDSN     string `json:"database_dsn"`      // -d / DATABASE_DSN
 	EnableHTTPS     bool   `json:"enable_https"`      // -s / ENABLE_HTTPS
+	TrustedSubnet   string `json:"trusted_subnet"`    // -t / TRUSTED_SUBNET
 }
 
 // NetAddress represents a network address with a host and port.
@@ -55,6 +57,7 @@ func ParseFlags() Config {
 		IsDatabaseExist: true,
 		IsFileExist:     true,
 		EnableHTTPS:     false,
+		TrustedSubnet:   "",
 	}
 
 	flag.StringVar(&c.ServerAddress, "a", "", "address and port to run server")
@@ -64,6 +67,7 @@ func ParseFlags() Config {
 	flag.BoolVar(&c.EnableHTTPS, "s", false, "enable https")
 	flag.StringVar(&c.ConfigFile, "c", "", "config file")
 	flag.StringVar(&c.BaseURL, "b", "", "base URL in format 'http://host:port'")
+	flag.StringVar(&c.TrustedSubnet, "t", "", "trusted subnet in CIDR notation")
 
 	flag.Parse()
 
@@ -128,6 +132,14 @@ func ParseFlags() Config {
 		c.EnableHTTPS = false
 	}
 
+	// trusted subnet
+	c.TrustedSubnet = cmp.Or(
+		c.TrustedSubnet,
+		os.Getenv("TRUSTED_SUBNET"),
+		configFile.TrustedSubnet,
+		"0.0.0.0/0", // дефолтное значение - доступ для всех
+	)
+
 	logger.GetLogger().Info("Init service config",
 		zap.String("SERVER_PORT", c.ServerAddress),
 		zap.String("BASE_URL", c.BaseURL),
@@ -137,6 +149,7 @@ func ParseFlags() Config {
 		zap.Boolp("IsDatabaseExist", &c.IsDatabaseExist),
 		zap.Boolp("IsFileExist", &c.IsFileExist),
 		zap.Boolp("EnableHTTPS", &c.EnableHTTPS),
+		zap.String("TRUSTED_SUBNET", c.TrustedSubnet),
 	)
 
 	return c

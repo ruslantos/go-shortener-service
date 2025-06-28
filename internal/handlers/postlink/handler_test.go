@@ -18,7 +18,7 @@ import (
 
 func TestHandler_Handle_Success(t *testing.T) {
 	extend := "http://ivghfkudbptp.biz/qqlcxvlwy1o/pbmze/ad4hdsyf"
-	service := &MocklinksService{}
+	service := &mocklinksService{}
 	service.EXPECT().Add(context.Background(), extend).Return("short", nil)
 	h := New(service)
 	req, err := http.NewRequest(http.MethodPost, "", io.NopCloser(strings.NewReader(extend)))
@@ -33,7 +33,7 @@ func TestHandler_Handle_Success(t *testing.T) {
 
 func TestHandler_Handle_ErrorEmptyBody(t *testing.T) {
 	extend := ""
-	service := &MocklinksService{}
+	service := &mocklinksService{}
 	h := New(service)
 
 	req, err := http.NewRequest(http.MethodPost, "", io.NopCloser(strings.NewReader(extend)))
@@ -46,7 +46,7 @@ func TestHandler_Handle_ErrorEmptyBody(t *testing.T) {
 
 func TestHandler_Handle_ErrorLinkService(t *testing.T) {
 	extend := "http://ivghfkudbptp.biz/qqlcxvlwy1o/pbmze/ad4hdsyf"
-	service := &MocklinksService{}
+	service := &mocklinksService{}
 	service.EXPECT().Add(context.Background(), extend).Return("short", errors.New("some error"))
 	h := New(service)
 	req, err := http.NewRequest(http.MethodPost, "", io.NopCloser(strings.NewReader(extend)))
