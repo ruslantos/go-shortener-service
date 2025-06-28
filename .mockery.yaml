@@ -20,3 +20,8 @@ packages:
       dir: internal/handlers/shortenbatch
     interfaces:
       linksService:
+  github.com/ruslantos/go-shortener-service/internal/service:
+    config:
+      dir: internal/service
+    interfaces:
+      LinksStorage:

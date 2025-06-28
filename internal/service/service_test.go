@@ -15,50 +15,6 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/models"
 )
 
-// MockLinksStorage реализует интерфейс LinksStorage для тестирования
-type MockLinksStorage struct {
-	mock.Mock
-}
-
-func (m *MockLinksStorage) Close() error {
-	return nil
-}
-
-func (m *MockLinksStorage) AddLink(ctx context.Context, link models.Link, userID string) (models.Link, error) {
-	args := m.Called(ctx, link, userID)
-	return args.Get(0).(models.Link), args.Error(1)
-}
-
-func (m *MockLinksStorage) GetLink(ctx context.Context, value string) (models.Link, error) {
-	args := m.Called(ctx, value)
-	return args.Get(0).(models.Link), args.Error(1)
-}
-
-func (m *MockLinksStorage) Ping(ctx context.Context) error {
-	args := m.Called(ctx)
-	return args.Error(0)
-}
-
-func (m *MockLinksStorage) AddLinkBatch(ctx context.Context, links []models.Link, userID string) ([]models.Link, error) {
-	args := m.Called(ctx, links, userID)
-	return args.Get(0).([]models.Link), args.Error(1)
-}
-
-func (m *MockLinksStorage) GetUserLinks(ctx context.Context, userID string) ([]models.Link, error) {
-	args := m.Called(ctx, userID)
-	return args.Get(0).([]models.Link), args.Error(1)
-}
-
-func (m *MockLinksStorage) DeleteUserURLs(ctx context.Context, urls []DeletedURLs) error {
-	args := m.Called(ctx, urls)
-	return args.Error(0)
-}
-
-func (m *MockLinksStorage) InitStorage() error {
-	args := m.Called()
-	return args.Error(0)
-}
-
 func TestLinkService_Get(t *testing.T) {
 	tests := []struct {
 		name        string

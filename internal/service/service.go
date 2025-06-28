@@ -31,7 +31,7 @@ type LinksStorage interface {
 	InitStorage() error
 	// Close закрывает хранилище.
 	Close() error
-	// CountUsers возвращает количество пользователей.
+	// CountURLs возвращает количество ссылок.
 	CountURLs(ctx context.Context) int
 	// CountUsers возвращает количество пользователей.
 	CountUsers(ctx context.Context) int
