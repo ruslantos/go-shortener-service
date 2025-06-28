@@ -18,6 +18,7 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/config"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/deleteuserurls"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/getlink"
+	"github.com/ruslantos/go-shortener-service/internal/handlers/getstats"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/getuserurls"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/ping"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/postlink"
@@ -113,6 +114,7 @@ func setupRouter(linkService service.LinkService, log *zap.Logger) *chi.Mux {
 	shortenBatchHandler := shortenbatch.New(&linkService)
 	getUserUrlsHandler := getuserurls.New(&linkService)
 	deleteUserUrlsHandler := deleteuserurls.New(&linkService)
+	getStatsHandler := getstats.New(&linkService)
 
 	r := chi.NewRouter()
 
@@ -129,6 +131,7 @@ func setupRouter(linkService service.LinkService, log *zap.Logger) *chi.Mux {
 	r.Get("/api/user/urls", getUserUrlsHandler.Handle)
 	r.Delete("/api/user/urls", deleteUserUrlsHandler.Handle)
 	r.Mount("/debug/pprof", pprofHandler())
+	r.Get("/api/internal/stats", getStatsHandler.Handle)
 
 	return r
 }

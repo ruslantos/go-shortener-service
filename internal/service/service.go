@@ -31,6 +31,10 @@ type LinksStorage interface {
 	InitStorage() error
 	// Close закрывает хранилище.
 	Close() error
+	// CountUsers возвращает количество пользователей.
+	CountURLs(ctx context.Context) int
+	// CountUsers возвращает количество пользователей.
+	CountUsers(ctx context.Context) int
 }
 
 // LinkService предоставляет сервис для работы с ссылками.
@@ -177,4 +181,12 @@ func getUserIDFromContext(ctx context.Context) string {
 		return ""
 	}
 	return userID
+}
+
+// GetStats возвращает статистику по ссылкам и пользователям.
+func (l *LinkService) GetStats(ctx context.Context) (urls int, users int, err error) {
+	urls = l.linksStorage.CountURLs(ctx)
+	users = l.linksStorage.CountUsers(ctx)
+
+	return urls, users, nil
 }

@@ -212,3 +212,24 @@ func (l LinksStorage) DeleteUserURLs(ctx context.Context, urls []service.Deleted
 func (l *LinksStorage) Close() error {
 	return l.db.Close()
 }
+
+// CountURLs возвращает количество ссылок в хранилище.
+func (l *LinksStorage) CountURLs(ctx context.Context) int {
+	var count int
+	err := l.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM links").Scan(&count)
+	if err != nil {
+		return 0
+	}
+
+	return count
+}
+
+// CountUsers возвращает количество уникальных пользователей в хранилище.
+func (l *LinksStorage) CountUsers(ctx context.Context) int {
+	var count int
+	err := l.db.QueryRowContext(ctx, "SELECT COUNT(DISTINCT user_id) FROM links").Scan(&count)
+	if err != nil {
+		return 0
+	}
+	return count
+}
