@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/pprof"
 	"os/signal"
@@ -12,6 +13,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/crypto/acme/autocert"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"go.uber.org/zap"
 
@@ -24,10 +27,12 @@ import (
 	"github.com/ruslantos/go-shortener-service/internal/handlers/postlink"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/shorten"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/shortenbatch"
+	"github.com/ruslantos/go-shortener-service/internal/interceptors/authinterceptor"
 	authMiddlware "github.com/ruslantos/go-shortener-service/internal/middleware/auth"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/compress"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/trustedsubnet"
+	grpcServer "github.com/ruslantos/go-shortener-service/internal/server/grpc"
 	"github.com/ruslantos/go-shortener-service/internal/service"
 	"github.com/ruslantos/go-shortener-service/internal/storage"
 )
@@ -62,10 +67,14 @@ func main() {
 
 	go linkService.StartDeleteWorker(ctx)
 
+	// HTTP server
 	srv := &http.Server{
 		Addr:    cfg.ServerAddress,
 		Handler: r,
 	}
+
+	// gRPC server
+	grpcServer := setupGRPCServer(linkService, cfg)
 
 	go func() {
 		var err error
@@ -79,17 +88,37 @@ func main() {
 				GetCertificate: certManager.GetCertificate,
 				MinVersion:     tls.VersionTLS12,
 			}
+			// HTTP with TLS
 			srv.Addr = ":443"
 			srv.TLSConfig = tlsConfig
-
 			logger.GetLogger().Info("Starting HTTPS server on :443")
 			err = srv.ListenAndServeTLS("", "")
+			// gRPC with TLS
+			creds := credentials.NewTLS(tlsConfig)
+			grpcServer = grpc.NewServer(grpc.Creds(creds))
 		} else {
+			// HTTP
 			logger.GetLogger().Info("Starting HTTP server on :80")
 			err = srv.ListenAndServe()
+
+			// gRPC
+			grpcServer = grpc.NewServer()
 		}
 		if err != nil && err != http.ErrServerClosed {
 			logger.GetLogger().Fatal("cannot start server", zap.Error(err))
+		}
+	}()
+
+	// Start gRPC server
+	go func() {
+		lis, err := net.Listen("tcp", cfg.GRPCServerAddress)
+		if err != nil {
+			logger.GetLogger().Fatal("failed to listen", zap.Error(err))
+		}
+
+		logger.GetLogger().Info("Starting gRPC server", zap.String("address", cfg.GRPCServerAddress))
+		if err := grpcServer.Serve(lis); err != nil {
+			logger.GetLogger().Fatal("failed to serve gRPC", zap.Error(err))
 		}
 	}()
 
@@ -104,7 +133,9 @@ func main() {
 		logger.GetLogger().Error("Server forced to shutdown", zap.Error(err))
 	}
 
-	logger.GetLogger().Info("Server exited properly")
+	grpcServer.GracefulStop()
+
+	logger.GetLogger().Info("Servers exited properly")
 }
 
 func setupRouter(linkService service.LinkService, log *zap.Logger, cfg config.Config) *chi.Mux {
@@ -152,4 +183,13 @@ func pprofHandler() http.Handler {
 	mux.Handle("/block", pprof.Handler("block"))
 	mux.Handle("/mutex", pprof.Handler("mutex"))
 	return mux
+}
+
+func setupGRPCServer(service service.LinkService, cfg config.Config) *grpc.Server {
+	grpcSer := grpc.NewServer(
+		grpc.UnaryInterceptor(authinterceptor.AuthInterceptor()),
+	)
+	grpcHandler := grpcServer.New(&service)
+	grpcHandler.Register(grpcSer)
+	return grpcSer
 }

@@ -19,16 +19,17 @@ var FlagShortURL = "http://localhost:8080/"
 
 // Config содержит все параметры конфигурации приложения
 type Config struct {
-	ServerAddress   string
-	BaseURL         string
-	LogLevel        string
-	FileStoragePath string
-	DatabaseDsn     string
-	IsDatabaseExist bool
-	IsFileExist     bool
-	EnableHTTPS     bool
-	ConfigFile      string
-	TrustedSubnet   string
+	ServerAddress     string
+	BaseURL           string
+	LogLevel          string
+	FileStoragePath   string
+	DatabaseDsn       string
+	IsDatabaseExist   bool
+	IsFileExist       bool
+	EnableHTTPS       bool
+	ConfigFile        string
+	TrustedSubnet     string
+	GRPCServerAddress string
 }
 
 // ConfigFile represents the configuration file for the application.
@@ -50,14 +51,15 @@ type NetAddress struct {
 // ParseFlags парсит командные строки и переменные окружения для настройки приложения.
 func ParseFlags() Config {
 	c := Config{
-		ServerAddress:   ":8080",
-		BaseURL:         "",
-		LogLevel:        "",
-		DatabaseDsn:     "",
-		IsDatabaseExist: true,
-		IsFileExist:     true,
-		EnableHTTPS:     false,
-		TrustedSubnet:   "",
+		ServerAddress:     ":8080",
+		BaseURL:           "",
+		LogLevel:          "",
+		DatabaseDsn:       "",
+		IsDatabaseExist:   true,
+		IsFileExist:       true,
+		EnableHTTPS:       false,
+		TrustedSubnet:     "",
+		GRPCServerAddress: ":50051",
 	}
 
 	flag.StringVar(&c.ServerAddress, "a", "", "address and port to run server")
@@ -150,6 +152,7 @@ func ParseFlags() Config {
 		zap.Boolp("IsFileExist", &c.IsFileExist),
 		zap.Boolp("EnableHTTPS", &c.EnableHTTPS),
 		zap.String("TRUSTED_SUBNET", c.TrustedSubnet),
+		zap.String("GRPCServerAddress", c.GRPCServerAddress),
 	)
 
 	return c
