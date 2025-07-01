@@ -14,7 +14,7 @@ import (
 )
 
 func TestCreateShortURL(t *testing.T) {
-	conn, err := grpc.NewClient("localhost:50051", grpc.WithInsecure())
+	conn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatalf("did not connect: %v", err)
 	}
@@ -187,12 +187,11 @@ func TestGetUserURLs(t *testing.T) {
 //}
 
 func setupClient(t *testing.T) (api.ShortenerClient, context.Context, func()) {
-	conn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatalf("did not connect: %v", err)
 	}
 
-	// Создаем контекст с тестовым userID
 	userID := "test-user-id"
 	md := metadata.Pairs(string(auth.UserIDKey), userID)
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
