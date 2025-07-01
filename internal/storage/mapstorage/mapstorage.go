@@ -102,3 +102,13 @@ func (l *LinksStorage) DeleteUserURLs(ctx context.Context, urls []service.Delete
 func (l *LinksStorage) Close() error {
 	return nil
 }
+
+// CountURLs возвращает количество ссылок в хранилище.
+func (l *LinksStorage) CountURLs(ctx context.Context) int {
+	return 0
+}
+
+// CountUsers возвращает количество пользователей в хранилище.
+func (l *LinksStorage) CountUsers(ctx context.Context) int {
+	return 0
+}

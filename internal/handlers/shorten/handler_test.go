@@ -15,7 +15,7 @@ import (
 
 func TestHandler_Handle_Success(t *testing.T) {
 	extend := "http://ivghfkudbptp.biz/qqlcxvlwy1o/pbmze/ad4hdsyf"
-	service := &MocklinksService{}
+	service := &mocklinksService{}
 	service.EXPECT().Add(context.Background(), extend).Return("short", nil)
 	h := New(service)
 	in := ShortenRequest{
@@ -34,7 +34,7 @@ func TestHandler_Handle_Success(t *testing.T) {
 
 func TestHandler_Handle_Error(t *testing.T) {
 	extend := ""
-	service := &MocklinksService{}
+	service := &mocklinksService{}
 	service.EXPECT().Add(context.Background(), extend).Return("short", errors.New("some error"))
 	h := New(service)
 	in := ShortenRequest{

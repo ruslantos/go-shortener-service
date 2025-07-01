@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/pprof"
 	"os/signal"
@@ -12,20 +13,26 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/crypto/acme/autocert"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"go.uber.org/zap"
 
 	"github.com/ruslantos/go-shortener-service/internal/config"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/deleteuserurls"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/getlink"
+	"github.com/ruslantos/go-shortener-service/internal/handlers/getstats"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/getuserurls"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/ping"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/postlink"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/shorten"
 	"github.com/ruslantos/go-shortener-service/internal/handlers/shortenbatch"
+	"github.com/ruslantos/go-shortener-service/internal/interceptors/authinterceptor"
 	authMiddlware "github.com/ruslantos/go-shortener-service/internal/middleware/auth"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/compress"
 	"github.com/ruslantos/go-shortener-service/internal/middleware/logger"
+	"github.com/ruslantos/go-shortener-service/internal/middleware/trustedsubnet"
+	grpcServer "github.com/ruslantos/go-shortener-service/internal/server/grpc"
 	"github.com/ruslantos/go-shortener-service/internal/service"
 	"github.com/ruslantos/go-shortener-service/internal/storage"
 )
@@ -52,7 +59,7 @@ func main() {
 
 	linkService := *service.NewLinkService(linkStorage)
 
-	r := setupRouter(linkService, log)
+	r := setupRouter(linkService, log, cfg)
 
 	ctx, stop := signal.NotifyContext(context.Background(),
 		syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
@@ -60,10 +67,14 @@ func main() {
 
 	go linkService.StartDeleteWorker(ctx)
 
+	// HTTP server
 	srv := &http.Server{
 		Addr:    cfg.ServerAddress,
 		Handler: r,
 	}
+
+	// gRPC server
+	grpcServer := setupGRPCServer(linkService, cfg)
 
 	go func() {
 		var err error
@@ -77,17 +88,37 @@ func main() {
 				GetCertificate: certManager.GetCertificate,
 				MinVersion:     tls.VersionTLS12,
 			}
+			// HTTP with TLS
 			srv.Addr = ":443"
 			srv.TLSConfig = tlsConfig
-
 			logger.GetLogger().Info("Starting HTTPS server on :443")
 			err = srv.ListenAndServeTLS("", "")
+			// gRPC with TLS
+			creds := credentials.NewTLS(tlsConfig)
+			grpcServer = grpc.NewServer(grpc.Creds(creds))
 		} else {
+			// HTTP
 			logger.GetLogger().Info("Starting HTTP server on :80")
 			err = srv.ListenAndServe()
+
+			// gRPC
+			grpcServer = grpc.NewServer()
 		}
 		if err != nil && err != http.ErrServerClosed {
 			logger.GetLogger().Fatal("cannot start server", zap.Error(err))
+		}
+	}()
+
+	// Start gRPC server
+	go func() {
+		lis, err := net.Listen("tcp", cfg.GRPCServerAddress)
+		if err != nil {
+			logger.GetLogger().Fatal("failed to listen", zap.Error(err))
+		}
+
+		logger.GetLogger().Info("Starting gRPC server", zap.String("address", cfg.GRPCServerAddress))
+		if err := grpcServer.Serve(lis); err != nil {
+			logger.GetLogger().Fatal("failed to serve gRPC", zap.Error(err))
 		}
 	}()
 
@@ -102,10 +133,12 @@ func main() {
 		logger.GetLogger().Error("Server forced to shutdown", zap.Error(err))
 	}
 
-	logger.GetLogger().Info("Server exited properly")
+	grpcServer.GracefulStop()
+
+	logger.GetLogger().Info("Servers exited properly")
 }
 
-func setupRouter(linkService service.LinkService, log *zap.Logger) *chi.Mux {
+func setupRouter(linkService service.LinkService, log *zap.Logger, cfg config.Config) *chi.Mux {
 	postLinkHandler := postlink.New(&linkService)
 	getLinkHandler := getlink.New(&linkService)
 	shortenHandler := shorten.New(&linkService)
@@ -113,13 +146,16 @@ func setupRouter(linkService service.LinkService, log *zap.Logger) *chi.Mux {
 	shortenBatchHandler := shortenbatch.New(&linkService)
 	getUserUrlsHandler := getuserurls.New(&linkService)
 	deleteUserUrlsHandler := deleteuserurls.New(&linkService)
+	getStatsHandler := getstats.New(&linkService)
 
 	r := chi.NewRouter()
 
 	r.Use(compress.GzipMiddlewareWriter,
 		compress.GzipMiddlewareReader,
 		logger.LoggerChi(log),
-		authMiddlware.CookieMiddleware)
+		authMiddlware.CookieMiddleware,
+		trustedsubnet.Middleware(cfg),
+	)
 
 	r.Post("/", postLinkHandler.Handle)
 	r.Get("/{link}", getLinkHandler.Handle)
@@ -129,6 +165,7 @@ func setupRouter(linkService service.LinkService, log *zap.Logger) *chi.Mux {
 	r.Get("/api/user/urls", getUserUrlsHandler.Handle)
 	r.Delete("/api/user/urls", deleteUserUrlsHandler.Handle)
 	r.Mount("/debug/pprof", pprofHandler())
+	r.Get("/api/internal/stats", getStatsHandler.Handle)
 
 	return r
 }
@@ -146,4 +183,13 @@ func pprofHandler() http.Handler {
 	mux.Handle("/block", pprof.Handler("block"))
 	mux.Handle("/mutex", pprof.Handler("mutex"))
 	return mux
+}
+
+func setupGRPCServer(service service.LinkService, cfg config.Config) *grpc.Server {
+	grpcSer := grpc.NewServer(
+		grpc.UnaryInterceptor(authinterceptor.AuthInterceptor()),
+	)
+	grpcHandler := grpcServer.New(&service)
+	grpcHandler.Register(grpcSer)
+	return grpcSer
 }
